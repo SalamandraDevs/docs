@@ -1,26 +1,26 @@
-# Salamandra Devs Documentation
+# Documentación Salamandra Devs
 
-Community-maintained knowledge base for the **Salamandra Devs** community. Guides, architecture notes, and operational runbooks are organized by language.
+Base de conocimiento mantenida por la comunidad **Salamandra Devs**. Las guías, notas de arquitectura y runbooks operativos están organizados por idioma.
 
-## Languages
+## Idiomas
 
-| Language | Path | Description |
+| Idioma | Ruta | Descripción |
 | --- | --- | --- |
-| English | [en/](./en/) | Full documentation set |
-| Español | [es/](./es/) | Spanish translations (in progress) |
+| English | [en/](./en/) | Conjunto completo de documentación |
+| Español | [es/](./es/) | Traducciones al español (en progreso) |
 
-Start with the README in your preferred language:
+Comience con el README en su idioma preferido:
 
-- [English documentation](./en/README.md)
+- [Documentación en inglés](./en/README.md)
 - [Documentación en español](./es/README.md)
 
-## Contribute
+## Contribuir
 
-Contributions are welcome in any supported language. When adding or updating a guide:
+Las contribuciones son bienvenidas en cualquier idioma admitido. Al añadir o actualizar una guía:
 
-- Place English content under `docs/en/`
-- Place Spanish translations under `docs/es/`
-- Keep filenames aligned across locales when possible (for example, `solid-principles.md` / `principios-solid.md`)
-- Cross-link equivalent documents when both locales exist
+- Ubique el contenido en inglés en `docs/en/`
+- Ubique las traducciones al español en `docs/es/`
+- Mantenga los nombres de archivo alineados entre idiomas cuando sea posible (por ejemplo, `solid-principles.md` / `principios-solid.md`)
+- Enlace documentos equivalentes cuando existan en ambos idiomas
 
-See [en/README.md](./en/README.md#contribute) for the full contribution workflow.
+Consulte [en/README.md](./en/README.md#contribute) para el flujo completo de contribución.
