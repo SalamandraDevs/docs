@@ -1,0 +1,19 @@
+.codex/
+.agents/
+.claude/
+
+# Editor and OS noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+**/*~
+**/\#*#
+**/.#*
+**/'#*
+
+# Temp files
+*.tmp
+tmp/
+
