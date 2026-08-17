@@ -328,4 +328,4 @@ Use SOLID in response to concrete change pressures: responsibilities that evolve
 ### Supplementary sources
 
 - GeeksforGeeks. [SOLID Principles with Real Life Examples](https://www.geeksforgeeks.org/system-design/solid-principle-in-programming-understand-with-real-life-examples/).
-- Arquitectura Java. [Libro Java SOLID V2](../../books/LibroJavaSolidV2.md).
+- Álvarez Caules, Cecilio Manuel. [*Arquitectura Java Sólida y Patrones*](https://www.buscalibre.es/libro-arquitectura-java-solida-y-patrones/9798322883159/p/60072104).
