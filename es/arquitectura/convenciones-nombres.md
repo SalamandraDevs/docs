@@ -1,5 +1,5 @@
 ---
-title: Convenciones de nomenclatura
+title: Convenciones de nombres
 owner: OdairTrujillo
 lastUpdate: 2026-08-21
 category: arquitectura
