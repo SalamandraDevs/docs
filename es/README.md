@@ -2,11 +2,6 @@
 
 Base de conocimiento mantenida por la comunidad **Salamandra Devs**. Las guías, notas de arquitectura y runbooks operativos están organizados por idioma.
 
-Comience con el README en su idioma preferido:
-
-- [Documentación en inglés](../en/README.md)
-- [Documentación en español](./README.md)
-
 ## Contenido disponible en español
 
 | Tema | Descripción |
