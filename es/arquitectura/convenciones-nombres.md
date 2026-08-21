@@ -38,7 +38,6 @@ Este documento es la autoridad para nombres y rutas. Cuando el código u otros d
 - **Campos:** camelCase en tipos TypeScript y esquemas Zod (`tenantId`, `entityId`, `createdBy`, `updatedAt`).
 - **Enumeraciones de estado:** nombre de tipo en PascalCase, valores literales en camelCase y exportación Zod `{entity}StatusSchema`.
 - **Nunca:** campos en PascalCase o snake_case en tipos de aplicación o esquemas Zod de entidades.
-- **Unicidad:** tipo de entidad único dentro del dominio de su servicio.
 
 ### Módulos de entidades
 
@@ -63,7 +62,6 @@ Cada agregado se ubica en `{service}/src/entities/{plural}/`:
 - **Acción:** verbo en pasado (`created`, `updated`, `deleted`, `published`).
 - **Ejemplos:** `auth.user.created`, `profile.person.updated`, `profile.org.created`.
 - **Nunca:** barras en nombres de eventos, identificadores variables en el sujeto (colóquelos en el payload o los headers) ni tokens en mayúsculas.
-- **Unicidad:** nombre de evento único en el catálogo.
 
 ### Convenciones de símbolos (por agregado)
 
@@ -186,15 +184,3 @@ Ramas de flujo: `devel`, `main`, `staging`, `production`.
 El trabajo de funcionalidades y correcciones usa nombres `{featureBranch}` o `{fixBranch}` elegidos según la convención del equipo.
 
 - **Nombres de ramas de flujo:** palabras únicas en minúsculas; sin mayúsculas, separadores ni mezcla de mayúsculas y minúsculas.
-- **Unicidad:** un proyecto no debe repetir nombres de ramas; distintos repositorios pueden reutilizar nombres.
-
-## Resumen de unicidad
-
-| Superficie | Regla |
-| --- | --- |
-| Nombre de evento | único en el catálogo |
-| Ruta API + método | únicos |
-| Tipo de entidad | único dentro del dominio del servicio |
-| Identificador de servicio | único en la plataforma |
-| `{entity}DatasetDef.name` | único dentro de un despliegue de base de datos por proceso de servicio |
-| Nombre de rama (mismo repositorio) | único |
