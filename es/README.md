@@ -6,7 +6,7 @@ Base de conocimiento mantenida por la comunidad **Salamandra Devs**. Las guías,
 
 | Tema | Descripción |
 | --- | --- |
-| [Convenciones de nomenclatura](./arquitectura/convenciones-nombres.md) | Estándar global de nombres y rutas para servicios, APIs, entidades, eventos, abreviaturas y DevOps. |
+| [Convenciones de nombres](./arquitectura/convenciones-nombres.md) | Estándar global de nombres y rutas para servicios, APIs, entidades, eventos, abreviaturas y DevOps. |
 | [Principios SOLID](./arquitectura/principios-solid.md) | Definiciones, terminología, ejemplos en TypeScript, beneficios, contrapartidas y referencias para SRP, OCP, LSP, ISP y DIP. |
 
 ## Contribuir
