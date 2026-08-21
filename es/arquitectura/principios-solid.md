@@ -2,9 +2,11 @@
 title: Principios SOLID
 owner: OdairTrujillo
 lastUpdate: 2026-08-17
-category: architecture
+category: arquitectura
 lang: es
+status: publicado
 ---
+
 ## Introducción
 
 **SOLID** es un acrónimo de cinco principios de diseño de software asociados a Robert C. Martin:
