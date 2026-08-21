@@ -2,13 +2,6 @@
 
 Base de conocimiento mantenida por la comunidad **Salamandra Devs**. Las guías, notas de arquitectura y runbooks operativos están organizados por idioma.
 
-## Idiomas
-
-| Idioma | Ruta | Descripción |
-| --- | --- | --- |
-| English | [en/](../en/) | Conjunto completo de documentación |
-| Español | [es/](./) | Traducciones al español (en progreso) |
-
 Comience con el README en su idioma preferido:
 
 - [Documentación en inglés](../en/README.md)
@@ -18,7 +11,8 @@ Comience con el README en su idioma preferido:
 
 | Tema | Descripción |
 | --- | --- |
-| [Principios SOLID](./architecture/principios-solid.md) | Definiciones, terminología, ejemplos en TypeScript, beneficios, contrapartidas y referencias para SRP, OCP, LSP, ISP y DIP. |
+| [Convenciones de nomenclatura](./arquitectura/convenciones-nombres.md) | Estándar global de nombres y rutas para servicios, APIs, entidades, eventos, abreviaturas y DevOps. |
+| [Principios SOLID](./arquitectura/principios-solid.md) | Definiciones, terminología, ejemplos en TypeScript, beneficios, contrapartidas y referencias para SRP, OCP, LSP, ISP y DIP. |
 
 ## Contribuir
 
