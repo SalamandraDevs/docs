@@ -10,6 +10,7 @@ This repository is open to contributions from members and collaborators. If you 
 
 - [Topics](#topics)
   - [Architecture](#architecture)
+  - [House](#house)
   - [Infrastructure](#infrastructure)
 - [How to use this repository](#how-to-use-this-repository)
 - [Contribute](#contribute)
@@ -32,6 +33,14 @@ Software design principles, patterns, and practices used across Salamandra Devs 
 | [Domain-orthogonal infrastructure wiring](./architecture/domain-orthogonal-infrastructure-wiring.md) | Ports-and-adapters approach for separating domain logic from persistence and wiring dependencies at the composition root. |
 | [Development Good Practices](./architecture/development-good-practices.md) | General guidance on modularity, encapsulation, and maintainable system design, with practical examples. |
 
+### House
+
+Platform-wide conventions for documentation and source-level API comments.
+
+| Topic | Description |
+| --- | --- |
+| [Documents Style Guide](./house/documents-style-guide.md) | House conventions for docs and TypeDoc source comments; the description, `@remarks`, and `{@link}` usage, with worked examples. |
+
 ### Infrastructure
 
 Operational guides for local development, mail services, and platform setup.
@@ -41,6 +50,7 @@ Operational guides for local development, mail services, and platform setup.
 | [Mail servers backup and sync](./infrastructure/MAIL-SERVERS-BACKUP-AND-SYNC.md) | Mailcow backup strategy, cold standby synchronization, systemd timers, and retention policy. |
 | [Local HTTPS setup for `mylocalhost.com`](./infrastructure/mylocalhost-https-setup-en.md) | Apache and mkcert setup on Ubuntu for trusted local HTTPS development. |
 | [CI/CD diagrams](./infrastructure/CI_CD/) | Excalidraw diagrams documenting CI/CD flows and related infrastructure decisions. |
+| [Package publishing and consumption](./infra/packaging.md) | How `@salamandradevs/*` libraries are published to npm (staged + provenance), consumed by other packages, and versioned. |
 
 ## How to use this repository
 

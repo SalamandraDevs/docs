@@ -47,7 +47,7 @@ Cada agregado se ubica en `{service}/src/entities/{plural}/`:
 | --- | --- |
 | `{plural}.ts` | archivo de clase de política (`users.ts` → `Users`) |
 | `schema.ts` | esquemas Zod de entidad y solicitudes |
-| `dataset.ts` | `MongoDatasetDef` e índices |
+| `datasetdef.ts` | `MongoDatasetDef` e índices |
 | `types.ts` | registros, comandos y consultas |
 | `index.ts` | reexportaciones del barrel |
 
@@ -104,7 +104,7 @@ Formas establecidas (las palabras completas siguen siendo válidas según [Abrev
 
 ### Nombres de datasets e índices Mongo
 
-Definidos en el `dataset.ts` de cada entidad:
+Definidos en el `datasetdef.ts` de cada entidad:
 
 | Elemento | Convención | Ejemplos |
 | --- | --- | --- |

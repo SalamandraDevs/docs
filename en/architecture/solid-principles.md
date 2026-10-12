@@ -4,7 +4,9 @@ owner: OdairTrujillo
 lastUpdate: 2026-08-17
 category: architecture
 lang: en
+status: published
 ---
+
 ## Introduction
 
 **SOLID** is an acronym for five software-design principles associated with Robert C. Martin:
