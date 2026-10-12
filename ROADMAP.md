@@ -1,6 +1,6 @@
 ---
 title: Salamandra Devs Platform Roadmap
-lastUpdate: 2026-09-28
+lastUpdate: 2026-10-08
 lang: en
 category: planning
 status: active
@@ -87,6 +87,10 @@ safe) and `@slmdevs/tools/node` (Node only).
   placeholder. (refs: `docs/zod-to-mysql-schema.md`)
 - [implemented] TOOLS-006 JWT signing input and timing-safe hash comparison.
   (refs: `src/node/crypto.ts`)
+- [implemented] TOOLS-007 `loadEnvVariables`; reads a config schema's `.meta({ env })`
+  fields from `process.env`, validates each with its own field schema, and returns the
+  resolved values without touching the config object, throwing `ENV_VAR_ERROR` on a missing
+  or malformed variable. (refs: `src/node/environment.ts`)
 
 ## AUTH: `@slmdevs/auth`
 
@@ -175,6 +179,16 @@ providers. Layers: `api/` (transport), `application/` (policy), `records/` (pers
   destroy key material nor rewrite its own state. Provisioning, rotation and destruction are
   operator procedures. (refs: `docs/en/howto/openbao/README.md`, `docs/signing-plan.md`,
   `services/auth/src/infra/keys/openbao/`)
+- [implemented] AUTH-024 Environment-sourced configuration; each env-backed value
+  (`BAO_ADDR`, `BAO_TOKEN`, OAuth client secrets, `JWT_HASH_SECRET`,
+  `BOOTSTRAP_ADMIN_PASSWORD`, the jose key-file passphrase) is declared on its schema with
+  `.meta({ env })`, carried in `config/local.json` as a placeholder, and resolved by
+  `loadEnvVariables` (TOOLS-007) at the consuming boundary. The config object keeps the
+  placeholder, so a secret never enters the decorated `request.server.config`. At `pnpm start`
+  the process loads `.env` through Node's `--env-file`, so the declared variables reach
+  `process.env` before the composition root reads them. (refs: TOOLS-007,
+  `src/application/config/schema.ts`, `src/infra/keys/`, `src/infra/oauth/config/schema.ts`,
+  `src/runtime/`, `config/local.json`, `package.json`)
 
 ## PROFILES: `@slmdevs/profiles`
 
