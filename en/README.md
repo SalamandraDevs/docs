@@ -47,9 +47,9 @@ Operational guides for local development, mail services, and platform setup.
 
 | Topic | Description |
 | --- | --- |
-| [Mail servers backup and sync](./infrastructure/MAIL-SERVERS-BACKUP-AND-SYNC.md) | Mailcow backup strategy, cold standby synchronization, systemd timers, and retention policy. |
-| [Local HTTPS setup for `mylocalhost.com`](./infrastructure/mylocalhost-https-setup-en.md) | Apache and mkcert setup on Ubuntu for trusted local HTTPS development. |
-| [CI/CD diagrams](./infrastructure/CI_CD/) | Excalidraw diagrams documenting CI/CD flows and related infrastructure decisions. |
+| [Mail servers backup and sync](./howto/MAIL-SERVERS-BACKUP-AND-SYNC.md) | Mailcow backup strategy, cold standby synchronization, systemd timers, and retention policy. |
+| [Local HTTPS setup for `mylocalhost.com`](./howto/mylocalhost-https-setup-en.md) | Apache and mkcert setup on Ubuntu for trusted local HTTPS development. |
+| [CI/CD diagrams](./infra/CI_CD/) | Excalidraw diagrams documenting CI/CD flows and related infrastructure decisions. |
 | [Package publishing and consumption](./infra/packaging.md) | How `@salamandradevs/*` libraries are published to npm (staged + provenance), consumed by other packages, and versioned. |
 
 ## How to use this repository
