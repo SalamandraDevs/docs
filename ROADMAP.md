@@ -1,6 +1,6 @@
 ---
 title: Salamandra Devs Platform Roadmap
-lastUpdate: 2026-10-08
+lastUpdate: 2026-10-16
 lang: en
 category: planning
 status: active
@@ -25,7 +25,7 @@ Every feature is one line with a stable ID, so people and agents can grep and ci
 - `planned`; approved in a plan document, not yet built.
 - `proposed`; inferred or under discussion; no approved design.
 - `canceled`; dropped; kept only for context.
-- Scope: only `core/`, `tools/`, `services/auth`, `services/profiles` and `docs/`.
+- Scope: only `core/`, `tools/`, `services/auth`, `services/profiles`, `infra/` and `docs/`.
 - Paths are relative to each repository root. Route paths are relative to the auth service
   root, before any gateway prefix.
 
@@ -42,6 +42,7 @@ Rules for agents editing this file:
 | TOOLS | `tools/` | `@slmdevs/tools` | Shared errors, guards, crypto | none |
 | AUTH | `services/auth/` | `@slmdevs/auth` | Authentication service | CORE, TOOLS |
 | PROFILES | `services/profiles/` | `@slmdevs/profiles` | Identity and entitlements | CORE, TOOLS |
+| INFRA | `infra/` | none | Shared deployment stack; network, MongoDB, OpenBao, operator tooling | none |
 | DOCS | `docs/` | none | Documentation and plans | none |
 
 Dependency direction: services depend on `core` and `tools`; `core` depends on `tools`.
@@ -188,7 +189,30 @@ providers. Layers: `api/` (transport), `application/` (policy), `records/` (pers
   the process loads `.env` through Node's `--env-file`, so the declared variables reach
   `process.env` before the composition root reads them. (refs: TOOLS-007,
   `src/application/config/schema.ts`, `src/infra/keys/`, `src/infra/oauth/config/schema.ts`,
-  `src/runtime/`, `config/local.json`, `package.json`)
+  `src/runtime/`, `config/devel.json`, `config/prod.json`, `package.json`)
+- [proposed] AUTH-025 Test suite strategy, unit and integration tiers; Vitest with subpath
+  aliases, shared in-memory fakes for `ICrud`, `ISigningKeyProvider`, and `IOAuthProvider`,
+  and Fastify `app.inject` over `buildApi`, so the fast loop runs with no MongoDB, OpenBao,
+  or live OAuth provider. (refs: `docs/tests-suite.md`, AUTH-001)
+- [proposed] AUTH-026 End-to-end test harness; the built Docker image exercised over HTTP
+  against ephemeral MongoDB, OpenBao, and a mock OIDC provider via docker-compose in CI,
+  covering the concrete adapters and the `createRuntime` bootstrap the integration tier
+  skips. Built after AUTH-025. (refs: `docs/tests-suite.md`, AUTH-025)
+- [implemented] AUTH-027 Docker containerization; multi-stage `node:22-alpine` image
+  (corepack-pinned pnpm, `--frozen-lockfile`, `pnpm prune --prod`, non-root user, argon2 musl
+  prebuilds so Alpine needs no toolchain), with `docker-compose.yml` (production, pulls the
+  GHCR image, mounts `config/prod.json`) and `docker-compose.dev.yml` (local build, mounts
+  `config/devel.json` and the jose keyfile). The container selects config by `NODE_ENV` and
+  takes secrets as environment variables rather than a `.env` file. (refs:
+  `services/auth/Dockerfile`, `services/auth/.dockerignore`,
+  `services/auth/docker-compose.yml`, `services/auth/docker-compose.dev.yml`, INFRA-001)
+- [implemented] AUTH-028 GitHub Actions CI/CD; `build-and-push` builds and pushes
+  `ghcr.io/<owner>/auth` on the production branch and version tags, and `deploy` runs on a
+  self-hosted runner with a provider-aware fail-fast readiness check; it reads
+  `signingKeys.provider.name` and `dbServerUri` from `config/prod.json`, always probes
+  MongoDB, and probes OpenBao only when the provider is `openbao`, before
+  `docker compose pull && up -d`. A commented seam triggers the infra pipeline first. (refs:
+  `services/auth/.github/workflows/deploy.yml`, INFRA-001)
 
 ## PROFILES: `@slmdevs/profiles`
 
@@ -208,12 +232,31 @@ It starts after the auth service works standalone. Only the persistence scaffold
   `profile.person.updated`. (refs: `docs/es/arquitectura/convenciones-nombres.md`)
 - [proposed] PROFILES-006 First internal OIDC provider for auth. (refs: `docs/auth-plan.md`)
 
+## INFRA: `infra/`
+
+Shared deployment stack that platform services depend on. It owns the Docker `services`
+network, the backing MongoDB and OpenBao instances, and the signing-key operator tooling.
+Services join the external `services` network and never provision this infrastructure
+themselves. Its own git repository, initialized without remotes.
+
+- [implemented] INFRA-001 Shared stack compose; `docker-compose.yml` (production) and
+  `docker-compose.dev.yml` (development) create the `services` network and run MongoDB and
+  OpenBao (file storage, Shamir seal, config in `openbao/openbao.hcl`). Production enables
+  MongoDB authentication and expects a real OpenBao auto-unseal; development runs MongoDB
+  unauthenticated. (refs: `infra/docker-compose.yml`, `infra/docker-compose.dev.yml`,
+  `infra/openbao/openbao.hcl`, `infra/README.md`)
+- [implemented] INFRA-002 Signing-key operator tooling; the OpenBao lifecycle scripts
+  (`unseal.sh`, `rotate.sh` and its steps) and the jose dev-keyfile provisioner
+  (`provision.sh`, which copies the encrypted keyfile into the auth service so local dev reads
+  it by default) are owned here, not by the auth service, which only consumes signing
+  material. (refs: `infra/operator/openbao/`, `infra/operator/jose/provision.sh`, AUTH-023)
+
 ## DOCS: `docs/`
 
 - [implemented] DOCS-001 Architecture guides in English and Spanish. (refs: `en/architecture/`,
   `es/arquitectura/`)
 - [implemented] DOCS-002 Plan documents for auth. (refs: `auth-plan.md`, `session-plan.md`,
-  `signing-plan.md`, `users-service-plan.md`, `entity-cursor-plugin.md`)
+  `signing-plan.md`, `users-service-plan.md`, `entity-cursor-plugin.md`, `tests-suite.md`)
 - [implemented] DOCS-003 Front matter and status conventions. (refs: `CLAUDE.md`)
 - [proposed] DOCS-004 Reconcile stale plan documents with the code. (refs: see below)
 - [implemented] DOCS-005 TypeDoc API documentation; TSDoc `/** */` source comments rendered to
