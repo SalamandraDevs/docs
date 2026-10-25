@@ -1,6 +1,6 @@
 ---
 title: Core Library Roadmap
-lastUpdate: 2026-10-24
+lastUpdate: 2026-10-25
 lang: en
 category: planning
 status: active
@@ -8,9 +8,7 @@ status: active
 
 # Core Library Roadmap
 
-Feature status for `core/` (`@slmdevs/core`). Line format, status tags, and editing rules
-are defined in the platform [ROADMAP](../../ROADMAP.md#roadmap-rules). Paths in `refs` are
-relative to `core/`.
+Feature status for `core/` (`@slmdevs/core`). Paths in `refs` are relative to `core/`.
 
 ## CORE features
 

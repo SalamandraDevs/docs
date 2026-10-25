@@ -1,6 +1,6 @@
 ---
 title: Auth Service Roadmap
-lastUpdate: 2026-10-24
+lastUpdate: 2026-10-25
 lang: en
 category: planning
 status: active
@@ -8,9 +8,8 @@ status: active
 
 # Auth Service Roadmap
 
-Feature status for `services/auth/` (`@slmdevs/auth`). Line format, status tags, and editing
-rules are defined in the platform [ROADMAP](../../ROADMAP.md#roadmap-rules). Paths in `refs`
-are relative to `services/auth/`.
+Feature status for `services/auth/` (`@slmdevs/auth`). Paths in `refs` are relative to
+`services/auth/`.
 
 ## AUTH features
 
