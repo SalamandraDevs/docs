@@ -11,11 +11,11 @@ status: published
 **SOLID** is an acronym for five software-design principles associated with Robert C.
 Martin:
 
-- SP-01 **SRP**: Single Responsibility Principle
-- SP-02 **OCP**: Open/Closed Principle
-- SP-03 **LSP**: Liskov Substitution Principle
-- SP-04 **ISP**: Interface Segregation Principle
-- SP-05 **DIP**: Dependency Inversion Principle
+- **SRP**: Single Responsibility Principle
+- **OCP**: Open/Closed Principle
+- **LSP**: Liskov Substitution Principle
+- **ISP**: Interface Segregation Principle
+- **DIP**: Dependency Inversion Principle
 
 These principles guide responsibility boundaries, extension, behavioral subtyping, interface
 design, and dependency direction. They do not guarantee good design by themselves; they

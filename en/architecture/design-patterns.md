@@ -11,28 +11,7 @@ status: published
 A **design pattern** is a named, reusable solution to a recurring design problem. Its name
 gives a team shared vocabulary: saying "this is an Adapter" tells a reader what the class
 does, what it hides, and what it must not do. This guide covers the patterns that the
-Salamandra Devs code uses today, grouped by the classic categories, additional patterns can 
-be found at [Refactoring Guru](https://refactoring.guru/design-patterns/):
-
-- **Creational**: provide various object creation mechanisms, which increase flexibility
-  and reuse of existing code.
-  - DP-01 Factory
-- **Structural**: explain how to assemble objects and classes into larger structures, while
-  keeping these structures flexible and efficient.
-  - DP-02 Adapter
-  - DP-03 Bridge
-  - DP-04 Facade
-- **Behavioral**: are concerned with algorithms and the assignment of responsibilities
-  between objects.
-  - DP-05 Strategy
-  - DP-06 Chain of Responsibility
-- **Application architecture**: organize an application beyond individual objects, deciding
-  where persistence is hidden, where objects are built and wired, how request-scoped data
-  reaches the code that needs it, and how concurrent work is shared.
-  - DP-07 Repository
-  - DP-08 Composition Root
-  - DP-09 Ambient Context
-  - DP-10 Single Flight
+Salamandra Devs code uses today, grouped by the classic categories.
 
 Patterns are vocabulary and tools, not goals. A pattern earns its place only when it solves
 a problem the code actually has; see [Benefits and trade-offs](#benefits-and-trade-offs).
