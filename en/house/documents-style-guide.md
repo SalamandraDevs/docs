@@ -118,7 +118,7 @@ Document lifecycle states:
 
 Feature status tags (`implemented`, `planned`, `proposed`, `canceled`) are not frontmatter
 values; they mark individual features inline. Their definitions, the roadmap line format,
-and the roadmap editing rules live in [ROADMAP.md](../../ROADMAP.md#roadmap-rules).
+and the roadmap editing rules live in [the roadmap README](../roadmap/README.md).
 
 ### DS-06 Frontmatter examples
 
