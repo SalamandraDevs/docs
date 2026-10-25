@@ -1,16 +1,29 @@
+---
+title: Salamandra Devs Documentation
+lastUpdate: 2026-10-25
+lang: en
+category: guide
+status: active
+---
+
 # Salamandra Devs Documentation
 
-Community-maintained knowledge base for the **Salamandra Devs** community. Guides, architecture notes, and operational runbooks live here so we can share what we learn, improve it together, and keep practices aligned across projects.
+Community-maintained knowledge base for the **Salamandra Devs** community. Guides,
+architecture notes, and operational runbooks live here so we can share what we learn,
+improve it together, and keep practices aligned across projects.
 
-This repository is open to contributions from members and collaborators. If you use these docs, spot a gap, or want to document something new, you are welcome to participate.
+This repository is open to contributions from members and collaborators. If you use these
+docs, spot a gap, or want to document something new, you are welcome to participate.
 
-**Other languages:** [Español — Principios SOLID](../es/architecture/principios-solid.md) · [Índice en español](../es/README.md)
+**Other languages:** [Principios SOLID (español)](../es/arquitectura/principios-solid.md) ·
+[Índice en español](../es/README.md)
 
 ## Table of contents
 
 - [Topics](#topics)
   - [Architecture](#architecture)
   - [House](#house)
+  - [Roadmap](#roadmap)
   - [Infrastructure](#infrastructure)
 - [How to use this repository](#how-to-use-this-repository)
 - [Contribute](#contribute)
@@ -26,49 +39,75 @@ This repository is open to contributions from members and collaborators. If you 
 
 Software design principles, patterns, and practices used across Salamandra Devs projects.
 
-| Topic | Description |
-| --- | --- |
-| [SOLID Principles](./architecture/solid-principles.md) | Definitions, terminology, TypeScript examples, benefits, trade-offs, and references for SRP, OCP, LSP, ISP, and DIP. |
-| [Current Design Patterns in the Mongo Entity Stack](./architecture/current-patterns.md) | How the shared Mongo layer maps to established patterns, with examples of sound and broken implementations. |
-| [Domain-orthogonal infrastructure wiring](./architecture/domain-orthogonal-infrastructure-wiring.md) | Ports-and-adapters approach for separating domain logic from persistence and wiring dependencies at the composition root. |
-| [Development Good Practices](./architecture/development-good-practices.md) | General guidance on modularity, encapsulation, and maintainable system design, with practical examples. |
+- [SOLID Principles](./architecture/solid-principles.md): definitions, terminology,
+  TypeScript examples, benefits, trade-offs, and references for SRP, OCP, LSP, ISP, and DIP.
+- [Current Design Patterns in the Mongo Entity Stack](./architecture/current-patterns.md):
+  how the shared Mongo layer maps to established patterns, with examples of sound and broken
+  implementations.
+- [Domain-orthogonal infrastructure
+  wiring](./architecture/domain-orthogonal-infrastructure-wiring.md): ports-and-adapters
+  approach for separating domain logic from persistence and wiring dependencies at the
+  composition root.
+- [Development Good Practices](./architecture/development-good-practices.md): general
+  guidance on modularity, encapsulation, and maintainable system design, with practical
+  examples.
 
 ### House
 
-Platform-wide conventions for documentation and source-level API comments.
+Platform-wide conventions for code, documentation, and source-level API comments.
 
-| Topic | Description |
-| --- | --- |
-| [Documents Style Guide](./house/documents-style-guide.md) | House conventions for docs and TypeDoc source comments; the description, `@remarks`, and `{@link}` usage, with worked examples. |
+- [Code Style](./house/code-style.md): TypeScript and general code style; imports, Zod
+  schemas, wrappers, errors, modules, blank lines, and RESTful API route hooks.
+- [Documents Style Guide](./house/documents-style-guide.md): Markdown style, wording,
+  frontmatter, status values, and TypeDoc source comments, with worked examples.
+
+### Roadmap
+
+Feature status per repository. The line format, status tags, and editing rules live in the
+platform [ROADMAP](../ROADMAP.md#roadmap-rules).
+
+- [Core roadmap](./roadmap/CORE-ROADMAP.md): feature status for `core/`.
+- [Tools roadmap](./roadmap/TOOLS-ROADMAP.md): feature status for `tools/`.
+- [Auth roadmap](./roadmap/AUTH-ROADMAP.md): feature status for `services/auth/`.
 
 ### Infrastructure
 
 Operational guides for local development, mail services, and platform setup.
 
-| Topic | Description |
-| --- | --- |
-| [Mail servers backup and sync](./howto/MAIL-SERVERS-BACKUP-AND-SYNC.md) | Mailcow backup strategy, cold standby synchronization, systemd timers, and retention policy. |
-| [Local HTTPS setup for `mylocalhost.com`](./howto/mylocalhost-https-setup-en.md) | Apache and mkcert setup on Ubuntu for trusted local HTTPS development. |
-| [CI/CD diagrams](./infra/CI_CD/) | Excalidraw diagrams documenting CI/CD flows and related infrastructure decisions. |
-| [Package publishing and consumption](./infra/packaging.md) | How `@salamandradevs/*` libraries are published to npm (staged + provenance), consumed by other packages, and versioned. |
+- [Mail servers backup and sync](./howto/MAIL-SERVERS-BACKUP-AND-SYNC.md): Mailcow backup
+  strategy, cold standby synchronization, systemd timers, and retention policy.
+- [Local HTTPS setup for `mylocalhost.com`](./howto/mylocalhost-https-setup-en.md): Apache
+  and mkcert setup on Ubuntu for trusted local HTTPS development.
+- [CI/CD diagrams](./infra/CI_CD/): Excalidraw diagrams documenting CI/CD flows and related
+  infrastructure decisions.
+- [Package publishing and consumption](./infra/packaging.md): how `@salamandradevs/*`
+  libraries are published to npm (staged + provenance), consumed by other packages, and
+  versioned.
 
 ## How to use this repository
 
-- Browse topics by area using the table above.
+- Browse topics by area using the lists above.
 - Prefer linking to an existing guide instead of duplicating content in project READMEs.
-- Treat docs as living material: when a practice changes in code or operations, update the relevant guide here.
+- Treat docs as living material: when a practice changes in code or operations, update the
+  relevant guide here.
 - Open an issue when something is unclear, outdated, or missing.
 
 ## Contribute
 
-We want this repository to reflect real community experience. Contributions can be small fixes, new guides, clearer examples, or corrections when something no longer matches current practice.
+We want this repository to reflect real community experience. Contributions can be small
+fixes, new guides, clearer examples, or corrections when something no longer matches current
+practice.
 
 ### Ways to participate
 
-- **Improve existing docs** — fix typos, clarify wording, update outdated steps, or add examples.
-- **Add new guides** — document architecture decisions, onboarding flows, runbooks, or tooling setup.
-- **Review pull requests** — help validate accuracy, readability, and consistency with existing material.
-- **Open issues** — report gaps, ask questions, or propose new topics before writing a large change.
+- **Improve existing docs**: fix typos, clarify wording, update outdated steps, or add
+  examples.
+- **Add new guides**: document architecture decisions, onboarding flows, runbooks, or
+  tooling setup.
+- **Review pull requests**: help validate accuracy, readability, and consistency with
+  existing material.
+- **Open issues**: report gaps, ask questions, or propose new topics before writing a large
+  change.
 
 ### Contribution workflow
 
@@ -97,7 +136,8 @@ We want this repository to reflect real community experience. Contributions can 
 7. **Open a pull request** against the main branch of the upstream repository.
 8. **Respond to review feedback** and update the PR until it is ready to merge.
 
-If you do not have write access, this fork-and-PR flow is the standard path for all contributions.
+If you do not have write access, this fork-and-PR flow is the standard path for all
+contributions.
 
 ### Pull request guidelines
 
@@ -106,7 +146,8 @@ If you do not have write access, this fork-and-PR flow is the standard path for 
 - Summarize what changed and why reviewers should care.
 - Prefer precise, practical writing over generic advice.
 - Include commands, config snippets, or examples when they help readers apply the guide.
-- Avoid unrelated formatting-only changes unless they improve readability in the files you are already editing.
+- Avoid unrelated formatting-only changes unless they improve readability in the files you
+  are already editing.
 
 ### Reporting issues
 
@@ -124,17 +165,22 @@ When opening an issue, include:
 - What is unclear, missing, or wrong
 - Any relevant context such as environment, tool versions, or project area
 
-For larger proposals, opening an issue before starting work helps align scope and avoid duplicate effort.
+For larger proposals, opening an issue before starting work helps align scope and avoid
+duplicate effort.
 
 ### Writing guidelines
 
 - Write for practitioners: concrete steps, clear terminology, and real-world context.
 - Use Markdown consistently with existing documents in this repository.
-- Prefer stable concepts and named patterns over project-specific jargon when the guide is meant to be shared broadly.
+- Prefer stable concepts and named patterns over project-specific jargon when the guide is
+  meant to be shared broadly.
 - Cross-link related guides instead of repeating large sections.
 - Add or update translations under `docs/es/` when contributing Spanish content.
-- Keep filenames aligned across locales when possible (for example, `solid-principles.md` / `principios-solid.md`).
-- Mark proposals, drafts, or environment-specific assumptions clearly when they are not yet standard practice.
+- Keep filenames aligned across locales when possible (for example, `solid-principles.md` /
+  `principios-solid.md`).
+- Mark proposals, drafts, or environment-specific assumptions clearly when they are not yet
+  standard practice.
 - Do not commit secrets, credentials, private hostnames, or customer-specific data.
 
-Thank you for helping Salamandra Devs build documentation the community can trust and improve together.
+Thank you for helping Salamandra Devs build documentation the community can trust and
+improve together.

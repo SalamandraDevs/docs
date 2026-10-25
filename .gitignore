@@ -17,3 +17,8 @@
 *.tmp
 tmp/
 
+# Not ready to publish
+plans/
+architecture-review.md
+en/howto
+en/infra

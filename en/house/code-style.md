@@ -3,7 +3,7 @@ title: Code Style
 lastUpdate: 2026-10-24
 lang: en
 category: guide
-status: active
+status: published
 ---
 
 ## Purpose

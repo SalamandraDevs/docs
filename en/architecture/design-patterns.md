@@ -3,7 +3,7 @@ title: Design Patterns
 lastUpdate: 2026-10-25
 lang: en
 category: architecture
-status: draft
+status: published
 ---
 
 ## Introduction

@@ -1,13 +1,20 @@
+---
+title: Documentación Salamandra Devs
+lastUpdate: 2026-10-25
+lang: es
+category: guide
+status: active
+---
+
 # Documentación Salamandra Devs
 
-Base de conocimiento mantenida por la comunidad **Salamandra Devs**. Las guías, notas de arquitectura y runbooks operativos están organizados por idioma.
+Base de conocimiento mantenida por la comunidad **Salamandra Devs**. Las guías, notas de
+arquitectura y runbooks operativos están organizados por idioma.
 
 ## Idiomas
 
-| Idioma | Ruta | Descripción |
-| --- | --- | --- |
-| English | [en/](./en/) | Conjunto completo de documentación |
-| Español | [es/](./es/) | Traducciones al español (en progreso) |
+- English: [en/](./en/), conjunto completo de documentación.
+- Español: [es/](./es/), traducciones al español (en progreso).
 
 Comience con el README en su idioma preferido:
 
@@ -16,11 +23,13 @@ Comience con el README en su idioma preferido:
 
 ## Contribuir
 
-Las contribuciones son bienvenidas en cualquier idioma admitido. Al añadir o actualizar una guía:
+Las contribuciones son bienvenidas en cualquier idioma admitido. Al añadir o actualizar una
+guía:
 
 - Ubique el contenido en inglés en `docs/en/`
 - Ubique las traducciones al español en `docs/es/`
-- Mantenga los nombres de archivo alineados entre idiomas cuando sea posible (por ejemplo, `solid-principles.md` / `principios-solid.md`)
+- Mantenga los nombres de archivo alineados entre idiomas cuando sea posible (por ejemplo,
+  `solid-principles.md` / `principios-solid.md`)
 - Enlace documentos equivalentes cuando existan en ambos idiomas
 
 Consulte [en/README.md](./en/README.md#contribute) para el flujo completo de contribución.

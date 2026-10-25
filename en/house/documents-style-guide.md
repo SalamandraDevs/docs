@@ -3,8 +3,7 @@ title: Documents Style Guide
 lastUpdate: 2026-10-24
 lang: en
 category: guide
-status: active
-owner: OdairTrujillo
+status: published
 ---
 
 ## Purpose

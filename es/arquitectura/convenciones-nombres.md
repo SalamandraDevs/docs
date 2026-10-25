@@ -17,43 +17,43 @@ Este documento es la autoridad para nombres y rutas. Cuando el código u otros d
 
 ### Servicios
 
-- **Identificadores canónicos de servicio:** nombre de una sola palabra en minúsculas.
+- **Identificadores de servicio:** nombre de una sola palabra en minúsculas.
 - **Identificadores definidos:** `auth`, `profile`, `gateway`.
 - **Ejemplos:** `messages`, `students`.
-- **Directorio del repositorio:** `services/{service}/`, donde `{service}` coincide con el identificador canónico.
+- **Directorio del repositorio:** `services/{service}/`, donde `{service}` coincide con el identificador del servicio.
 - **Nombre del paquete:** `@slmdevs/{service}` (por ejemplo, `@slmdevs/auth`, `@slmdevs/profile`).
 
 ### APIs
 
 - **Formato:** `/{service}/v{N}/...` con segmentos de ruta en minúsculas.
-- **Segmento de servicio:** identificador canónico del servicio.
+- **Segmento de servicio:** identificador del servicio.
 - **Segmento de versión:** `v1`, `v2`, etc.
 - **Ejemplos:** `api.slmdevs.com/profile/v1/person`, `/auth/v1/user`.
 - **Segmentos:** palabras únicas en minúsculas; sin mayúsculas, mezcla de mayúsculas y minúsculas ni kebab-case.
 
-### Entidades
+### Recursos
 
-- **Tipo de registro de entidad:** singular en PascalCase (`User`, `Person`, `Org`, `OutboxEvent`).
+- **Tipo de registro de recurso:** singular en PascalCase (`User`, `Person`, `Org`, `OutboxEvent`).
 - **Clase de política (módulo del servicio):** plural en PascalCase (`Users`, `Persons`, `Orgs`, `OutboxEvents`).
 - **Campos:** camelCase en tipos TypeScript y esquemas Zod (`tenantId`, `entityId`, `createdBy`, `updatedAt`).
-- **Enumeraciones de estado:** nombre de tipo en PascalCase, valores literales en camelCase y exportación Zod `{entity}StatusSchema`.
-- **Nunca:** campos en PascalCase o snake_case en tipos de aplicación o esquemas Zod de entidades.
+- **Enumeraciones de estado:** nombre de tipo en PascalCase, valores literales en camelCase y exportación Zod `{resource}StatusSchema`.
+- **Nunca:** campos en PascalCase o snake_case en tipos de aplicación o esquemas Zod de recursos.
 
-### Módulos de entidades
+### Módulos de recursos
 
 Cada agregado se ubica en `{service}/src/entities/{plural}/`:
 
 | Archivo | Nomenclatura |
 | --- | --- |
 | `{plural}.ts` | archivo de clase de política (`users.ts` → `Users`) |
-| `schema.ts` | esquemas Zod de entidad y solicitudes |
+| `schema.ts` | esquemas Zod de recurso y solicitudes |
 | `datasetdef.ts` | `MongoDatasetDef` e índices |
 | `types.ts` | registros, comandos y consultas |
 | `index.ts` | reexportaciones del barrel |
 
 **Carpeta `{plural}`:** plural en minúsculas o kebab-case que coincida con la colección Mongo o el plural del dominio (`users`, `persons`, `orgs`, `outbox-events`).
 
-**Agregado Organization:** `Org` es el token registrado de la entidad, no una abreviatura técnica. Nombres canónicos: registro `Org`, clase de política `Orgs`, directorio de módulo `orgs/`, colección Mongo `orgs` y sujeto de evento `org`. Use `Organization` / `organizations` solo en prosa cuando sea más claro.
+**Agregado Organization:** `Org` es el token registrado del recurso, no una abreviatura técnica. Nombres oficiales: registro `Org`, clase de política `Orgs`, directorio de módulo `orgs/`, colección Mongo `orgs` y sujeto de evento `org`. Use `Organization` / `organizations` solo en prosa cuando sea más claro.
 
 ### Eventos (NATS)
 
@@ -67,18 +67,18 @@ Cada agregado se ubica en `{service}/src/entities/{plural}/`:
 
 | Tipo de símbolo | Patrón | Ejemplo |
 | --- | --- | --- |
-| Tipo de registro de entidad | `{Entity}` | `Person` |
-| Clase de política | plural `{Entities}` | `Persons` |
-| Esquema Zod de entidad | `{entity}Schema` | `personSchema` |
-| Esquema Zod de estado | `{entity}StatusSchema` | `personStatusSchema` |
-| Esquema Zod de solicitud de creación | `create{Entity}RequestSchema` | `createPersonRequestSchema` |
-| DTO de solicitud de creación | `Create{Entity}Request` | `CreatePersonRequest` |
-| Comando de creación | `Create{Entity}Command` | `CreatePersonCommand` |
-| Esquema Zod de solicitud de actualización | `update{Entity}RequestSchema` | `updatePersonRequestSchema` |
-| DTO de solicitud de actualización | `Update{Entity}Request` | `UpdatePersonRequest` |
-| Comando de actualización | `Update{Entity}Command` | `UpdatePersonCommand` |
-| DTO de respuesta | `{Entity}Response` | `PersonResponse` |
-| Definición de dataset | `{entity}DatasetDef` | `personDatasetDef`, `orgDatasetDef` |
+| Tipo de registro de recurso | `{Resource}` | `Person` |
+| Clase de política | plural `{Resources}` | `Persons` |
+| Esquema Zod de recurso | `{resource}Schema` | `personSchema` |
+| Esquema Zod de estado | `{resource}StatusSchema` | `personStatusSchema` |
+| Esquema Zod de solicitud de creación | `create{Resource}RequestSchema` | `createPersonRequestSchema` |
+| DTO de solicitud de creación | `Create{Resource}Request` | `CreatePersonRequest` |
+| Comando de creación | `Create{Resource}Command` | `CreatePersonCommand` |
+| Esquema Zod de solicitud de actualización | `update{Resource}RequestSchema` | `updatePersonRequestSchema` |
+| DTO de solicitud de actualización | `Update{Resource}Request` | `UpdatePersonRequest` |
+| Comando de actualización | `Update{Resource}Command` | `UpdatePersonCommand` |
+| DTO de respuesta | `{Resource}Response` | `PersonResponse` |
+| Definición de dataset | `{resource}DatasetDef` | `personDatasetDef`, `orgDatasetDef` |
 
 Segundo ejemplo de agregado (`Org`): registro `Org`, política `Orgs`, esquemas `orgSchema` / `orgStatusSchema`, solicitudes `CreateOrgRequest`, comandos `CreateOrgCommand` y respuestas `OrgResponse`.
 
@@ -98,23 +98,23 @@ Formas establecidas (las palabras completas siguen siendo válidas según [Abrev
 
 - **`Db`** para tipos de conexión a bases de datos (`IDbConnection`, `MongoDbConnection`).
 - **`Dataset` sin abreviar** para la clase abstracta y sus métodos (`Dataset`, `ensureDataset()`).
-- **`Def`** para registros de definición (`MongoDatasetDef`, `MongoIndexDef`, `{entity}DatasetDef`).
+- **`Def`** para registros de definición (`MongoDatasetDef`, `MongoIndexDef`, `{resource}DatasetDef`).
 - **Archivos de implementación Mongo:** `mongo-{name}.ts` en kebab-case (`mongo-crud.ts`, `mongo-db-connection.ts`).
 - **Archivos de implementación MySQL:** `{name}.ts` sin prefijo adicional cuando la carpeta ya es `mysql/` (`mysqlcrud.ts`, `mysqldataset.ts`).
 
 ### Nombres de datasets e índices Mongo
 
-Definidos en el `datasetdef.ts` de cada entidad:
+Definidos en el `datasetdef.ts` de cada recurso:
 
 | Elemento | Convención | Ejemplos |
 | --- | --- | --- |
 | `MongoDatasetDef.name` | nombre de colección plural en minúsculas | `users`, `persons`, `orgs`, `events_outbox`, `contractors` |
 | `MongoIndexDef.name` | nombre descriptivo en snake_case | `tenant_username`, `tenant_email`, `tenant_person` |
-| Claves de índice | campos en camelCase que coincidan con los de la entidad | `{ tenantId: 1, username: 1 }` |
+| Claves de índice | campos en camelCase que coincidan con los del recurso | `{ tenantId: 1, username: 1 }` |
 
 ### Abreviaturas
 
-Las abreviaturas técnicas son opcionales: prefiera la palabra completa cuando el nombre siga siendo claro. Solo se permiten formas abreviadas establecidas en la industria y únicamente cuando mantienen legible un símbolo compuesto. Los tokens de entidad registrados, como `Org`, son nombres canónicos y quedan fuera de estas reglas.
+Las abreviaturas técnicas son opcionales: prefiera la palabra completa cuando el nombre siga siendo claro. Solo se permiten formas abreviadas establecidas en la industria y únicamente cuando mantienen legible un símbolo compuesto. Los tokens de recurso registrados, como `Org`, son nombres oficiales y quedan fuera de estas reglas.
 
 **Conteo de palabras**
 
@@ -159,7 +159,7 @@ Dos abreviaturas no deben aparecer juntas en el mismo símbolo.
 - Dos o más abreviaturas listadas en un símbolo, especialmente si son adyacentes (`MongoDbIdxDef`).
 - Truncamientos ad hoc no listados arriba.
 - Abreviaturas en identificadores de servicios o segmentos de rutas API.
-- Tokens de entidad ad hoc; `Org` es el único token de entidad abreviado registrado.
+- Tokens de recurso ad hoc; `Org` es el único token de recurso abreviado registrado.
 
 ### Archivos y código fuente
 

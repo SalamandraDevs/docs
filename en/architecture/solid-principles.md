@@ -1,6 +1,5 @@
 ---
 title: SOLID Principles
-owner: OdairTrujillo
 lastUpdate: 2026-08-17
 category: architecture
 lang: en

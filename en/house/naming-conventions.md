@@ -1,6 +1,5 @@
 ---
 title: Naming Conventions
-owner: OdairTrujillo
 lastUpdate: 2026-10-24
 category: architecture
 lang: en

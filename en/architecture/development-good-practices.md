@@ -3,7 +3,7 @@ title: Development Good Practices
 lastUpdate: 2026-10-25
 lang: en
 category: architecture
-status: active
+status: published
 ---
 
 ## Introduction
@@ -13,46 +13,6 @@ builds that cannot be reproduced, secrets that leak, processes that lose state, 
 incidents nobody can trace. This guide covers the practices that keep Salamandra Devs
 packages and services modular, reproducible, deployable, observable, and secure. They apply
 to `core/`, `tools/`, and every service under `services/`.
-
-The practices were benchmarked against [The Twelve-Factor App](https://12factor.net/). This
-guide does not restate the factors; it says how the platform applies them, where it goes
-further, and where it deliberately deviates
-([Relation to the Twelve-Factor App](#relation-to-the-twelve-factor-app)).
-
-- **Modules and boundaries**: how code is split into repositories, layers, and contracts.
-  - GP-01 One repository per package or service
-  - GP-02 Layered service structure
-  - GP-03 Contracts at boundaries, wiring at the composition root
-  - GP-04 Schemas as the single source of truth
-- **Dependencies and builds**: how a commit becomes the same build every time.
-  - GP-05 Declared and locked dependencies
-  - GP-06 Pinned toolchain
-  - GP-07 Supply-chain safeguards
-- **Configuration**: how settings and secrets reach a running process.
-  - GP-08 Validated configuration, fail fast
-  - GP-09 Secrets and credentials only from the environment
-  - GP-10 Configuration varies per deployment, not per build
-- **Backing services**: how databases, key stores, and providers are attached.
-  - GP-11 Backing services are attached resources behind contracts
-- **Build, release, and run**: how artifacts move from CI to production.
-  - GP-12 Immutable artifacts, deployed by identity
-  - GP-13 Quality gates run in CI
-- **Processes and runtime**: how a process holds state, starts, stops, and reports health.
-  - GP-14 Stateless processes
-  - GP-15 Disposability: fast start, graceful stop
-  - GP-16 Liveness and readiness
-  - GP-17 Administrative tasks are idempotent and operator-owned
-- **Observability and errors**: how a failure becomes visible and traceable.
-  - GP-18 Logs as an event stream
-  - GP-19 Request correlation
-  - GP-20 Classified errors
-- **Environments**: how development stays close to production.
-  - GP-21 Development and production parity
-- **Security**: how permissions and defaults limit damage.
-  - GP-22 Least privilege
-  - GP-23 Secure transport defaults
-- **Testing**: how behavior is verified without real infrastructure.
-  - GP-24 Tests at contract seams
 
 Each practice carries a stable ID (`GP-NN`) for citation; IDs follow
 [Document IDs](../house/naming-conventions.md#document-ids). Where the code does not meet a
