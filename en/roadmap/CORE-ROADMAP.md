@@ -37,4 +37,5 @@ record handling, and request execution context.
   adapters by name.
   (refs: `src/infra/database/database-provider.ts`,
   `src/infra/database/database-adapter.ts`)
-- [proposed] CORE-007 MySQL schema conversion: depends on TOOLS-005. (refs: TOOLS-005)
+- [proposed] CORE-007 MySQL schema conversion: depends on
+  [TOOLS-005](./TOOLS-ROADMAP.md#tools-features).

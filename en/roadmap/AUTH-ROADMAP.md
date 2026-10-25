@@ -54,8 +54,8 @@ providers. Layers: `api/` (transport), `application/` (policy), `records/` (pers
   `src/application/sessions-service/`)
 - [implemented] AUTH-021 Database backend selection extraction: `bootstrapService` connects
   through `DatabaseProvider` and uses `DatabaseAdapter` to provision datasets and build CRUD
-  adapters, leaving no backend branch in bootstrap. (refs: CORE-008,
-  `services/auth/src/runtime/`)
+  adapters, leaving no backend branch in bootstrap.
+  (refs: [CORE-008](./CORE-ROADMAP.md#core-features), `services/auth/src/runtime/`)
 - [implemented] AUTH-023 Operator-owned signing-key lifecycle: the OpenBao provider is
   reduced to the four `ISigningKeyProvider` operations and makes exactly two calls, one KV
   read of the lifecycle document and one Transit sign. Self-renewal, startup preflight,
@@ -72,10 +72,12 @@ providers. Layers: `api/` (transport), `application/` (policy), `records/` (pers
   (`BAO_ADDR`, `BAO_TOKEN`, OAuth client secrets, `JWT_HASH_SECRET`,
   `BOOTSTRAP_ADMIN_PASSWORD`, the jose key-file passphrase) is declared on its schema with
   `.meta({ env })`, carried in `config/local.json` as a placeholder, and resolved by
-  `loadEnvVariables` (TOOLS-007) at the consuming boundary. The config object keeps the
+  `loadEnvVariables` ([TOOLS-007](./TOOLS-ROADMAP.md#tools-features)) at the consuming
+  boundary. The config object keeps the
   placeholder, so a secret never enters the decorated `request.server.config`. At `pnpm
   start` the process loads `.env` through Node's `--env-file`, so the declared variables
-  reach `process.env` before the composition root reads them. (refs: TOOLS-007,
+  reach `process.env` before the composition root reads them.
+  (refs: [TOOLS-007](./TOOLS-ROADMAP.md#tools-features),
   `src/application/config/schema.ts`, `src/infra/keys/`, `src/infra/oauth/config/schema.ts`,
   `src/runtime/`, `config/devel.json`, `config/prod.json`, `package.json`)
 - [implemented] AUTH-027 Docker containerization: multi-stage `node:22-alpine` image
