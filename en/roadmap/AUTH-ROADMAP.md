@@ -8,8 +8,8 @@ status: active
 
 # Auth Service Roadmap
 
-Feature status for `services/auth/` (`@slmdevs/auth`). Paths in `refs` are relative to
-`services/auth/`.
+Feature status for `services/auth/` (`@salamandradevs/auth`). Paths in `refs` are relative
+to `services/auth/`.
 
 ## AUTH features
 

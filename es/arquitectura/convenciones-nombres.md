@@ -21,7 +21,7 @@ Este documento es la autoridad para nombres y rutas. Cuando el código u otros d
 - **Identificadores definidos:** `auth`, `profile`, `gateway`.
 - **Ejemplos:** `messages`, `students`.
 - **Directorio del repositorio:** `services/{service}/`, donde `{service}` coincide con el identificador del servicio.
-- **Nombre del paquete:** `@slmdevs/{service}` (por ejemplo, `@slmdevs/auth`, `@slmdevs/profile`).
+- **Nombre del paquete:** `@salamandradevs/{service}` (por ejemplo, `@salamandradevs/auth`, `@salamandradevs/profile`).
 
 ### APIs
 
@@ -92,7 +92,7 @@ Segundo ejemplo de agregado (`Org`): registro `Org`, política `Orgs`, esquemas 
 
 Use la extensión `.js` en especificadores de importación relativos y de paquetes (NodeNext).
 
-### Biblioteca core (`@slmdevs/core`)
+### Biblioteca core (`@salamandradevs/core`)
 
 Formas establecidas (las palabras completas siguen siendo válidas según [Abreviaturas](#abreviaturas)):
 

@@ -8,12 +8,13 @@ status: active
 
 # Tools Library Roadmap
 
-Feature status for `tools/` (`@slmdevs/tools`). Paths in `refs` are relative to `tools/`.
+Feature status for `tools/` (`@salamandradevs/tools`). Paths in `refs` are relative to
+`tools/`.
 
 ## TOOLS features
 
-Small shared helpers with no application policy. Exports `@slmdevs/tools/shared` (browser
-safe) and `@slmdevs/tools/node` (Node only).
+Small shared helpers with no application policy. Exports `@salamandradevs/tools/shared`
+(browser safe) and `@salamandradevs/tools/node` (Node only).
 
 - [implemented] TOOLS-001 `CustomError` and error names. (refs: `src/shared/errors.ts`)
 - [implemented] TOOLS-002 `makeApiRequest` fetch helper. (refs: `src/shared/requests.ts`)

@@ -8,7 +8,8 @@ status: active
 
 # Core Library Roadmap
 
-Feature status for `core/` (`@slmdevs/core`). Paths in `refs` are relative to `core/`.
+Feature status for `core/` (`@salamandradevs/core`). Paths in `refs` are relative to
+`core/`.
 
 ## CORE features
 
