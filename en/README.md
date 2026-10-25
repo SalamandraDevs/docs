@@ -24,7 +24,6 @@ docs, spot a gap, or want to document something new, you are welcome to particip
   - [Architecture](#architecture)
   - [House](#house)
   - [Roadmap](#roadmap)
-  - [Infrastructure](#infrastructure)
 - [How to use this repository](#how-to-use-this-repository)
 - [Contribute](#contribute)
   - [Ways to participate](#ways-to-participate)
@@ -41,13 +40,9 @@ Software design principles, patterns, and practices used across Salamandra Devs 
 
 - [SOLID Principles](./architecture/solid-principles.md): definitions, terminology,
   TypeScript examples, benefits, trade-offs, and references for SRP, OCP, LSP, ISP, and DIP.
-- [Current Design Patterns in the Mongo Entity Stack](./architecture/current-patterns.md):
-  how the shared Mongo layer maps to established patterns, with examples of sound and broken
-  implementations.
-- [Domain-orthogonal infrastructure
-  wiring](./architecture/domain-orthogonal-infrastructure-wiring.md): ports-and-adapters
-  approach for separating domain logic from persistence and wiring dependencies at the
-  composition root.
+- [Design Patterns](./architecture/design-patterns.md): the creational, structural,
+  behavioral, and application-architecture patterns the Salamandra Devs code uses today
+  (DP-01 through DP-10), grouped by category with the problem each one solves.
 - [Development Good Practices](./architecture/development-good-practices.md): general
   guidance on modularity, encapsulation, and maintainable system design, with practical
   examples.
@@ -60,29 +55,17 @@ Platform-wide conventions for code, documentation, and source-level API comments
   schemas, wrappers, errors, modules, blank lines, and RESTful API route hooks.
 - [Documents Style Guide](./house/documents-style-guide.md): Markdown style, wording,
   frontmatter, status values, and TypeDoc source comments, with worked examples.
+- [Naming Conventions](./house/naming-conventions.md): the single naming standard for
+  services, routes, records, and symbols, with abbreviation rules and the document-ID
+  scheme.
 
 ### Roadmap
 
-Feature status per repository. The line format, status tags, and editing rules live in the
-platform [ROADMAP](../ROADMAP.md#roadmap-rules).
+Feature status per package, tracked inline with status tags.
 
-- [Core roadmap](./roadmap/CORE-ROADMAP.md): feature status for `core/`.
-- [Tools roadmap](./roadmap/TOOLS-ROADMAP.md): feature status for `tools/`.
-- [Auth roadmap](./roadmap/AUTH-ROADMAP.md): feature status for `services/auth/`.
-
-### Infrastructure
-
-Operational guides for local development, mail services, and platform setup.
-
-- [Mail servers backup and sync](./howto/MAIL-SERVERS-BACKUP-AND-SYNC.md): Mailcow backup
-  strategy, cold standby synchronization, systemd timers, and retention policy.
-- [Local HTTPS setup for `mylocalhost.com`](./howto/mylocalhost-https-setup-en.md): Apache
-  and mkcert setup on Ubuntu for trusted local HTTPS development.
-- [CI/CD diagrams](./infra/CI_CD/): Excalidraw diagrams documenting CI/CD flows and related
-  infrastructure decisions.
-- [Package publishing and consumption](./infra/packaging.md): how `@salamandradevs/*`
-  libraries are published to npm (staged + provenance), consumed by other packages, and
-  versioned.
+- [Core Library Roadmap](./roadmap/CORE-ROADMAP.md): feature status for `core/`.
+- [Tools Library Roadmap](./roadmap/TOOLS-ROADMAP.md): feature status for `tools/`.
+- [Auth Service Roadmap](./roadmap/AUTH-ROADMAP.md): feature status for `services/auth/`.
 
 ## How to use this repository
 
