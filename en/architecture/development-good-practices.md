@@ -35,6 +35,27 @@ this guide.
   deployed.
 - **Must / should**: "must" is mandatory; "should" allows a documented exception.
 
+## Semantic commit messages
+
+Commit subjects use the semantic prefix convention: a `<type>` tag, an optional
+`(<scope>)`, and a short imperative subject. When a commit resolves a reviewed gap, name
+the involved IDs in the subject or body, for example `GP-09`.
+
+Format: `<type>(<scope>): <subject>`; the scope is optional.
+
+The types follow the [Semantic Commit Messages][scm] convention; `fix`, `feat`, `chore`,
+and `docs` are the ones the repositories use most:
+
+- **feat**: a new feature for the user, not a new feature for a build script.
+- **fix**: a bug fix for the user, not a fix to a build script.
+- **docs**: changes to the documentation.
+- **style**: formatting, missing semicolons, and similar; no production code change.
+- **refactor**: refactoring production code, such as renaming a variable.
+- **test**: adding or refactoring tests; no production code change.
+- **chore**: updating build tooling, tasks, or dependencies; no production code change.
+
+[scm]: https://gist.github.com/joshbuchea/6f47e86d2510bce28f8e7f42ae84c716
+
 ## Platform Examples
 
 The examples are trimmed excerpts from `core/`, `tools/`, and `services/auth/`, including
