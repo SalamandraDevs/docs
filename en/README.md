@@ -15,8 +15,7 @@ improve it together, and keep practices aligned across projects.
 This repository is open to contributions from members and collaborators. If you use these
 docs, spot a gap, or want to document something new, you are welcome to participate.
 
-**Other languages:** [Principios SOLID (español)](../es/arquitectura/principios-solid.md) ·
-[Índice en español](../es/README.md)
+**Other languages:** [Índice en español](../es/README.md)
 
 ## Table of contents
 

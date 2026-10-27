@@ -1,6 +1,6 @@
 ---
 title: Documents Style Guide
-lastUpdate: 2026-10-24
+lastUpdate: 2026-10-27
 lang: en
 category: guide
 status: published
@@ -188,6 +188,22 @@ status: active
   version to show they are synchronized translations.
 - If a translated version is updated after the English, bump its `lastUpdate` to the new
   date.
+
+### DS-14 Translations
+
+- Translations follow the [Translation Mappings](../../lang-mappings.md). English is the
+  source of truth: translate from `docs/en/` into a locale folder such as `docs/es/`, never
+  the reverse, and when the two disagree, realign the translation to the English document.
+- Mirror the `en/` structure using the directory and file names in the mapping; one English
+  document maps to exactly one translated document.
+- Translate the terms in the mapping's terminology table consistently, and keep the terms it
+  lists as established English programming terms untranslated.
+- Keep the section IDs (`XX-NN`) identical across languages; translate only the heading text
+  after the ID, and recompute each anchor from the translated heading. Design-pattern names
+  stay in English so their anchors match `en/`.
+- Keep code identifiers, route paths, commands, config keys, and string literals verbatim,
+  and translate prose and comments; frontmatter handling for translations is in
+  [DS-08](#ds-08-translating-between-languages).
 
 ## TypeDoc Source Comments
 
