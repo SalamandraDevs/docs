@@ -188,9 +188,6 @@ status: active
   version to show they are synchronized translations.
 - If a translated version is updated after the English, bump its `lastUpdate` to the new
   date.
-
-### DS-14 Translations
-
 - Translations follow the [Translation Mappings](../../lang-mappings.md). English is the
   source of truth: translate from `docs/en/` into a locale folder such as `docs/es/`, never
   the reverse, and when the two disagree, realign the translation to the English document.
@@ -202,8 +199,7 @@ status: active
   after the ID, and recompute each anchor from the translated heading. Design-pattern names
   stay in English so their anchors match `en/`.
 - Keep code identifiers, route paths, commands, config keys, and string literals verbatim,
-  and translate prose and comments; frontmatter handling for translations is in
-  [DS-08](#ds-08-translating-between-languages).
+  and translate prose and comments.
 
 ## TypeDoc Source Comments
 

@@ -1,6 +1,6 @@
 ---
 title: Guía de estilo de documentos
-lastUpdate: 2026-10-24
+lastUpdate: 2026-10-27
 lang: es
 category: guia
 status: published
@@ -202,6 +202,22 @@ status: active
   inglés para mostrar que son traducciones sincronizadas.
 - Si una versión traducida se actualiza después de la inglesa, suba su `lastUpdate` a la
   fecha nueva.
+- Las traducciones siguen los [Mapeos de traducción](../../lang-mappings.md). El inglés es
+  la fuente de verdad: traduzca desde `docs/en/` hacia una carpeta de idioma como
+  `docs/es/`, nunca al revés, y cuando ambos difieran, realinee la traducción con el
+  documento en inglés.
+- Replique la estructura de `en/` usando los nombres de directorios y archivos del mapeo; un
+  documento en inglés corresponde a exactamente un documento traducido.
+- Traduzca de forma consistente los términos de la tabla de terminología del mapeo, y
+  mantenga sin traducir los términos que esta lista como términos de programación en inglés
+  establecidos.
+- Mantenga los identificadores de sección (`XX-NN`) idénticos entre idiomas; traduzca solo
+  el texto del encabezado después del ID, y recalcule cada ancla a partir del encabezado
+  traducido. Los nombres de los patrones de diseño permanecen en inglés para que sus anclas
+  coincidan con `en/`.
+- Mantenga los identificadores de código, las rutas de las API, los comandos, las claves de
+  configuración y los literales de cadena textualmente, y traduzca la prosa y los
+  comentarios.
 
 ## Comentarios de código fuente para TypeDoc
 
