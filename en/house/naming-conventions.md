@@ -1,6 +1,6 @@
 ---
 title: Naming Conventions
-lastUpdate: 2026-10-24
+lastUpdate: 2026-10-29
 category: architecture
 lang: en
 status: published
@@ -19,7 +19,7 @@ House and architecture documents give each section a stable ID, `XX-NN`: a two-l
 document prefix and a two-digit number (`GP-05`). An ID-bearing section uses the heading
 `### XX-NN Title`. Never reuse or renumber an ID; add new sections with the next free
 number. Prefixes: `SP` SOLID principles, `DP` design patterns, `GP` development good
-practices, `CS` code style, `DS` documents style.
+practices, `CS` code style, `DS` documents style, `BP` build plans.
 
 ## Engineering
 

@@ -1,6 +1,6 @@
 ---
 title: Documents Style Guide
-lastUpdate: 2026-10-27
+lastUpdate: 2026-10-29
 lang: en
 category: guide
 status: published
@@ -57,6 +57,7 @@ specifications across the platform.
 
 ### DS-03 Plans and design requirements
 
+- Write build plans with the sections and rules in [Build Plans](./build-plans.md).
 - Do not create flow diagrams in plans or design requirements.
 - Use descriptive headings and itemized lists to structure design documents.
 - Reference architectural principles and existing patterns from `docs/en/architecture/`.

@@ -1,6 +1,6 @@
 ---
 title: Salamandra Devs Documentation
-lastUpdate: 2026-10-25
+lastUpdate: 2026-10-29
 lang: en
 category: guide
 status: active
@@ -57,6 +57,8 @@ Platform-wide conventions for code, documentation, and source-level API comments
 - [Naming Conventions](./house/naming-conventions.md): the single naming standard for
   services, routes, records, and symbols, with abbreviation rules and the document-ID
   scheme.
+- [Build Plans](./house/build-plans.md): required sections, citation of architecture and
+  house rules, and the compliance review for plans under `docs/plans/`.
 
 ### Roadmap
 
