@@ -1,6 +1,6 @@
 ---
 title: Auth Service Roadmap
-lastUpdate: 2026-10-25
+lastUpdate: 2026-11-08
 lang: en
 category: planning
 status: active
@@ -106,8 +106,11 @@ providers. Layers: `api/` (transport), `application/` (policy), `records/` (pers
   factory stay gated by the signing plan's rule against adding either before a second
   implementation exists. (refs: `docs/signing-plan.md`, `services/auth/src/runtime/keys.ts`,
   `services/auth/src/runtime/types.ts`, `services/auth/src/application/contracts.ts`)
-- [planned] AUTH-011 Password reset: `POST /v1/password/reset` exists but always fails with
-  `ARCHITECTURE_NOT_IMPLEMENTED`. (refs: `src/application/passwords-service/`)
+- [implemented] AUTH-011 Password reset: self-service, email-based recovery. The request
+  step `POST /v1/password/reset` always replies 202 and emails a one-time token link; the
+  confirm step `POST /v1/password/reset/confirm` sets a new password from that token and
+  revokes the account's sessions. (refs: `docs/plans/261031-password-reset-plan.md`,
+  `src/application/passwords-service/`, `src/api/routes/v1/password/`)
 - [proposed] AUTH-012 Timing-safe unknown-user path: reduce user-enumeration signal.
   (refs: NOTE in `passwords-service.ts`)
 - [proposed] AUTH-013 OAuth PKCE for the authorization-code flow: per-attempt
@@ -134,3 +137,28 @@ providers. Layers: `api/` (transport), `application/` (policy), `records/` (pers
 - [canceled] AUTH-015 Scheduled signing-key rotation: rejected. AUTH-023 moved the whole key
   lifecycle to the operator, so rotation is an OpenBao CLI procedure and the auth service
   has no rotation to schedule. (refs: `docs/en/howto/openbao/README.md`)
+- [implemented] AUTH-029 Configurable rate-limit policies: a global limit every route
+  inherits, named per-route policies, and a second limit keyed by client IP and account on
+  sign-in and password reset, all read from `http.rateLimit`; a configurable
+  `http.trustProxy` (never `true`) so limits count real clients behind the gateway, and a
+  classified 429 on exceeded limits. (refs: `src/api/plugins/security.ts`,
+  `src/api/routes/v1/hooks/rate-limit.ts`, `docs/plans/261031-rate-limit-plan.md`)
+- [implemented] AUTH-030 Rate-limit tiers: replaces the per-route policies with tiers named
+  for what they count, `public` per client IP, `authenticated` per session subject,
+  `credential` per IP and per account, and `exempt`; every route declares its tier and
+  startup fails when one is missing. Also fixes the per-account limit, which never ran
+  because only the first limiter on a request counted. (refs:
+  `src/api/plugins/security.ts`, `src/api/routes/v1/hooks/rate-limit.ts`,
+  `docs/plans/261104-rate-limit-tiers-plan.md`, AUTH-029)
+- [implemented] AUTH-031 Tenant API keys: every call carries an `x-api-key` that binds its
+  tenant, verified by HMAC with no database round trip; admins provision tenants and
+  issue, list, and revoke keys, with revocations reloaded in the background; the `tenant`
+  role owns its tenant's users, and the key's tier sets the tenant's rate limit. Built
+  after AUTH-030. (refs: `src/application/api-keys-service/`, `src/api/plugins/api-key.ts`,
+  `docs/plans/261104-api-keys-plan.md`, AUTH-030)
+- [planned] AUTH-032 API keys move to the gateway: the API key registry, its signing and
+  administration, and the per-tenant rate-limit tier move from auth to the new `gateway`
+  service. Auth drops `x-api-key`, reads the gateway-asserted `x-tenant-id` through
+  `resolveTenant`, and keeps only its `public`, `authenticated`, and `credential` tiers;
+  the signing-key machinery and access-token verification move to `@salamandradevs/core`.
+  (refs: `docs/plans/261106-gateway-plan.md`, AUTH-031)

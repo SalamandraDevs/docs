@@ -1,6 +1,6 @@
 ---
 title: Code Style
-lastUpdate: 2026-10-24
+lastUpdate: 2026-11-13
 lang: en
 category: guide
 status: published
@@ -8,12 +8,14 @@ status: published
 
 ## Purpose
 
-House code style for TypeScript across the Salamandra Devs platform, including how RESTful
-API services compose Fastify route hooks. These rules apply to every contributor, human or
-agent. Source comment rules live in the [Documents Style Guide](./documents-style-guide.md).
+House code style for TypeScript across the Salamandra Devs platform. These rules apply to
+every contributor, human or agent. Source comment rules live in the
+[Documents Style Guide](./documents-style-guide.md), and how Fastify services compose route
+hooks lives in [Build Services](./build-services.md#route-hooks).
 
 Each rule section carries a stable ID (`CS-NN`) for citation; IDs follow
-[Document IDs](./naming-conventions.md#document-ids).
+[Document IDs](./naming-conventions.md#document-ids). CS-09 to CS-12 are retired: they
+moved to BS-05 to BS-08.
 
 ## TypeScript
 
@@ -276,96 +278,5 @@ async revokeAllForSubject(subject: string): Promise<number> {
 // Prefer
 async deleteBySubject(subject: string): Promise<number> {
   return this.sessionRecordsHandler.deleteBySubject(subject);
-}
-```
-
-## RESTful API hooks
-
-How RESTful API services compose Fastify route hooks: where shared hooks live, when a
-route group may define its own, and how route-local hooks stay typed without assertions.
-
-### CS-09 Shared hooks
-
-- Cross-cutting or reusable route hooks must be published as Fastify plugin decorations.
-  This includes authentication, execution-context binding, rate/tenant/security hooks, and
-  common authorization hooks. Do not export free-floating helper functions from shared hook
-  modules and pass them directly as Fastify lifecycle hooks.
-- Use `api/routes/v1/hooks/` as the preferred source for shared v1 hook composition. These
-  files should compose decorated Fastify hooks into ordered arrays for shared route
-  policies.
-
-```ts
-// api/routes/v1/hooks/authenticate.ts
-export function protectionHooks(fastify: FastifyInstance): PreHandlerHooks {
-  return [fastify.authenticateRequest, fastify.bindExecutionContext];
-}
-```
-
-### CS-10 Route-local hooks
-
-- In `api/routes/v1/[slug]/`, add a local `hooks.ts` only when the route needs
-  slug-specific hook composition or highly local route policy. Local hook files may compose
-  shared v1 hooks with decorated Fastify hooks, and may define private route-local hooks
-  only when the policy is not shared outside that route group.
-
-```ts
-// api/routes/v1/users/hooks.ts
-function requireUserOwnerOrAdmin(request: FastifyRequest): void {
-  // Route-local policy that is not shared by other route groups.
-}
-
-export function userOwnerProtectionHooks(fastify: FastifyInstance): PreHandlerHooks {
-  return [...protectionHooks(fastify), requireUserOwnerOrAdmin];
-}
-```
-
-- When a local route policy becomes useful outside one route group, promote it to a
-  Fastify plugin decoration and compose it through `api/routes/v1/hooks/` instead of
-  importing it as a shared helper.
-
-### CS-11 Controllers
-
-- Controllers must assume declared hooks already established route preconditions. Do not
-  repeat authentication, execution-context, tenant, or common authorization checks in
-  controllers unless the controller is handling a distinct runtime state that hooks cannot
-  establish.
-
-### CS-12 Typed route-local hooks
-
-- A route-local hook that needs typed access to route-specific request parts (`params`,
-  `body`, `querystring`, `headers`) is typed through a route def type, never through
-  `FastifyRequest` augmentation and never through assertions. Augmentation is reserved for
-  route-invariant decorations such as `sessionGrant` or cursor codecs.
-- Type the hook parameter as `FastifyRequest<TRouteDef>`, compose the hook array through
-  the shared `PreHandlerHooks<TRouteDef>` helper from `api/routes/v1/hooks/types.ts`, and
-  reuse the same route def at route registration and in the controller so the request
-  contract has one source of truth. Define `TRouteDef` in `api/routes/v1/[slug]/types.ts`.
-- Keep shared, route-invariant composers on the default `PreHandlerHooks` generic and put
-  the specialization on the route-local composer; a default-generic hook composes into a
-  specialized array, never the reverse.
-- Clue: if a hook needs asserting `request.params`, `body`, or `query` (`as ...`) to
-  typecheck, the route def approach was not applied; introduce a route def and thread it
-  through the composer instead of asserting.
-
-```ts
-// api/routes/v1/hooks/types.ts
-export type PreHandlerHooks<
-  TRouteDef extends RouteGenericInterface = RouteGenericInterface
-> = preHandlerHookHandler<
-  RawServerDefault,
-  RawRequestDefaultExpression,
-  RawReplyDefaultExpression,
-  TRouteDef
->[];
-
-// api/routes/v1/users/hooks.ts
-function authorizeUserUpdate(request: FastifyRequest<UpdateUserRequest>): void {
-  const targetRecordId: string = request.params.recordId; // inferred, no assertion
-}
-
-export function userUpdateProtectionHooks(
-  fastify: FastifyInstance
-): PreHandlerHooks<UpdateUserRequest> {
-  return [...protectionHooks(fastify), authorizeUserUpdate];
 }
 ```

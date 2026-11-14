@@ -1,6 +1,6 @@
 ---
 title: Roadmap Rules
-lastUpdate: 2026-10-25
+lastUpdate: 2026-11-11
 lang: en
 category: planning
 status: active
@@ -9,7 +9,7 @@ status: active
 # Roadmap Rules
 
 These rules apply to every `{REPO}-ROADMAP.md` file in this directory (`AUTH`, `CORE`,
-`TOOLS`).
+`GATEWAY`, `TOOLS`).
 
 ## Line format
 
@@ -44,10 +44,11 @@ frontmatter `status` values.
 
 ## Scope and paths
 
-- Scope: `core/`, `tools/`, and `services/auth/`, each with its own roadmap file in this
-  directory.
-- Paths are relative to each repository root. Route paths are relative to the auth service
-  root, before any gateway prefix.
+- Scope: `core/`, `tools/`, `services/auth/`, and `services/gateway/`, each with its own
+  roadmap file in this directory.
+- Paths are relative to each repository root. Auth route paths are relative to the auth
+  service root, before any gateway prefix; gateway route paths include the service prefix as
+  served (`/gateway/v1/...`).
 
 ## Editing rules
 

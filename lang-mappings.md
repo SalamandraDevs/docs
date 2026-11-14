@@ -1,6 +1,6 @@
 ---
 title: English-to-Spanish Translation Mappings
-lastUpdate: 2026-10-27
+lastUpdate: 2026-11-13
 lang: en
 category: guide
 status: active
@@ -23,8 +23,8 @@ realigned to it.
 - Keep verbatim, never translated: code identifiers, type and symbol names, route paths, CLI
   commands, config keys, environment variable names, package names, and string literals
   inside code.
-- Keep the section IDs (`SP-NN`, `DP-NN`, `GP-NN`, `CS-NN`, `DS-NN`) identical across
-  languages; only the heading text after the ID is translated.
+- Keep the section IDs (`SP-NN`, `DP-NN`, `GP-NN`, `CS-NN`, `DS-NN`, `BS-NN`) identical
+  across languages; only the heading text after the ID is translated.
 - Translate prose, code comments, and TSDoc summary/`@remarks` text. Keep TSDoc tags
   (`@param`, `@returns`, `@throws`, `@remarks`, `{@link}`) and the symbols they reference.
 - Frontmatter: keep field names in English, translate `title`, set `lang: es`, keep `status`
@@ -34,6 +34,26 @@ realigned to it.
 - Prefer the established English programming term when one is in common Spanish usage; see
   [Terms kept in English](#terms-kept-in-english). Translate the rest; see
   [Translated terminology](#translated-terminology).
+
+## Pending translations
+
+Spanish documents that lag behind their English source. Update the translation, then
+remove its line here.
+
+- `arquitectura/buenas-practicas-desarrollo.md`: behind the 2026-11-13 English update;
+  GP-16, GP-19, and GP-23 moved to BS; GP-06, GP-11, and GP-22 merged into GP-05, GP-03,
+  and the new GP-25, whose titles changed; GP-09, GP-12, GP-15, GP-18, GP-20, GP-21, GP-24,
+  and the closing sections were rewritten.
+- `normas/construir-servicios.md`: not created yet; translate
+  `house/build-services.md`.
+- `normas/estilo-codigo.md`: behind the 2026-11-13 English update; CS-09 to CS-12 moved
+  to Build Services as BS-05 to BS-08, and the Purpose section changed.
+- `arquitectura/patrones-diseno.md`: behind the 2026-11-13 English update; DP-06 links to
+  BS-07 instead of CS-11.
+- `normas/convenciones-nombres.md`: behind the 2026-11-13 English update; the Document IDs
+  section adds the `BS` prefix and the retired-ID rule.
+- `README.md`: behind the 2026-11-13 English update; the House index adds Build
+  Services.
 
 ## Directory names
 
@@ -58,6 +78,7 @@ the document titles use `roadmap`, not a translation.
 | `house/code-style.md` | `normas/estilo-codigo.md` |
 | `house/documents-style-guide.md` | `normas/guia-estilo-documentos.md` |
 | `house/naming-conventions.md` | `normas/convenciones-nombres.md` |
+| `house/build-services.md` | `normas/construir-servicios.md` |
 | `infra/packaging.md` | `infra/empaquetado.md` |
 | `roadmap/README.md` | `roadmap/README.md` |
 | `roadmap/AUTH-ROADMAP.md` | `roadmap/AUTH-ROADMAP.md` |

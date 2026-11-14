@@ -1,6 +1,6 @@
 ---
 title: Design Patterns
-lastUpdate: 2026-10-25
+lastUpdate: 2026-10-30
 lang: en
 category: architecture
 status: published
@@ -28,7 +28,7 @@ Each pattern carries a stable ID (`DP-NN`) for citation; IDs follow
 - **Contract**: an `interface` or function type that describes what a caller needs
   (`ICrud`, `ISigningKeyProvider`, `SchemaConverter`). Also called a port.
 - **Implementation**: a class that fulfills a contract with a specific technology
-  (`MongoCrud`, `OpenBaoSigningKeyProvider`). Also called an adapter when it wraps a
+  (`MongoCrud`, `OpenBaoKeysProvider`). Also called an adapter when it wraps a
   vendor API.
 - **Composition root**: the startup code that builds concrete objects and injects them
   (`services/auth/src/runtime/`).
@@ -64,14 +64,14 @@ defines Factory Method (subclasses decide the product) and Abstract Factory (fam
 related products). The platform uses a simpler, common form: a **parameterized factory**,
 one function or constructor that picks the concrete class from a value.
 
-`createSigningKeyProvider` builds the signing-key provider named in configuration:
+`createKeysProvider` builds the signing-key provider named in configuration:
 
 ```typescript
-// services/auth/src/infra/keys/factory.ts
-export function createSigningKeyProvider(config: SigningKeysConfig): ISigningKeyProvider {
+// core/src/keys/factory.ts
+export function createKeysProvider(config: SigningKeysConfig): ISigningKeyProvider {
   switch (config.provider.name) {
     case 'openbao': {
-      return new OpenBaoSigningKeyProvider(
+      return new OpenBaoKeysProvider(
         config.provider,
         config.algorithm,
         config.jwks.cacheMaxAgeSecs
@@ -79,7 +79,7 @@ export function createSigningKeyProvider(config: SigningKeysConfig): ISigningKey
     }
 
     case 'jose': {
-      return new JoseSigningKeyProvider(config.provider, config.algorithm);
+      return new JoseKeysProvider(config.provider, config.algorithm);
     }
 
     default: {
@@ -103,8 +103,8 @@ The pattern breaks when callers choose the class themselves:
 // Avoid: every caller repeats the selection and imports every provider.
 const provider: ISigningKeyProvider =
   config.provider.name === 'openbao'
-    ? new OpenBaoSigningKeyProvider(config.provider, config.algorithm, 300)
-    : new JoseSigningKeyProvider(config.provider, config.algorithm);
+    ? new OpenBaoKeysProvider(config.provider, config.algorithm, 300)
+    : new JoseKeysProvider(config.provider, config.algorithm);
 ```
 
 Related principle: **OCP**, with a trade-off: a new product means a new `case`, so the
@@ -313,7 +313,7 @@ fastify.delete<{ Params: RecordParams }>(
 `authenticateRequest` stops the chain when the bearer token is missing
 (`AUTHENTICATION_FAILED`) or fails verification, so `requireAdminRole` and the controller
 never run for that request. Controllers can therefore assume the chain's preconditions
-([Code Style](../house/code-style.md#cs-11-controllers)).
+([BS-07](../house/build-services.md#bs-07-controllers)).
 
 The pattern breaks when a controller repeats or reorders the checks:
 
@@ -425,7 +425,7 @@ The pattern breaks when policy code builds its own collaborators:
 ```typescript
 // Avoid: the service hides a concrete dependency and its configuration.
 export class SessionsService {
-  private readonly tokens: ITokenService = new TokensService(loadConfig().auth, /* ... */);
+  private readonly tokens: ITokensService = new TokensService(loadConfig().auth, /* ... */);
 }
 ```
 
@@ -442,7 +442,7 @@ Node's `AsyncLocalStorage`. Transport binds it once per request; `RecordsHandler
 on every operation:
 
 ```typescript
-// core/src/utils/context.ts
+// core/src/runtime/context.ts
 const executionContextStorage: AsyncLocalStorage<ExecutionContext> =
   new AsyncLocalStorage<ExecutionContext>();
 
@@ -463,7 +463,7 @@ export function getExecutionCtx(): ExecutionContext {
   return context;
 }
 
-// services/auth/src/api/plugins/execution-context.ts
+// http/src/plugins/execution-context.ts
 const executionContext: ExecutionContext = {
   authenticated: {
     actorId: request.sessionGrant.actorId,
@@ -518,7 +518,7 @@ export function singleFlight<T>(operation: () => Promise<T>): () => Promise<T> {
   };
 }
 
-// services/auth/src/infra/keys/openbao/provider.ts
+// core/src/keys/openbao/openbao-keys-provider.ts
 private readonly synchronize = singleFlight(() => this.refreshSnapshot());
 ```
 
@@ -554,12 +554,12 @@ Patterns have costs. Each adds indirection, and a pattern applied without a matc
 problem makes simple code harder to follow. Two trade-offs in the current code are
 accepted on purpose:
 
-- The parameterized factories (`createSigningKeyProvider`, `DatabaseProvider`,
+- The parameterized factories (`createKeysProvider`, `DatabaseProvider`,
   `DatabaseAdapter`) must be edited for each new variant. The exhaustiveness `never` check
   makes that edit impossible to forget.
 - Ambient Context hides a dependency, as described in its section.
 
-Patterns the platform does not use, and why:
+Patterns the platform does not use yet, and why (each can be adopted when suitable):
 
 - **Singleton**: one shared instance per process is achieved by the composition root
   creating it once, without a global access point.

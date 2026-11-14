@@ -1,6 +1,6 @@
 ---
 title: Tools Library Roadmap
-lastUpdate: 2026-10-25
+lastUpdate: 2026-11-09
 lang: en
 category: planning
 status: active
@@ -28,3 +28,11 @@ Small shared helpers with no application policy. Exports `@salamandradevs/tools/
   or malformed variable. (refs: `src/node/environment.ts`)
 - [proposed] TOOLS-005 `zodToMySqlSchema` real conversion: the current function is a
   placeholder. (refs: `docs/zod-to-mysql-schema.md`)
+- [implemented] TOOLS-008 `RATE_LIMIT_EXCEEDED` error name: adds the classification the auth
+  rate limiter uses for its 429 response. (refs: `src/shared/errors.ts`,
+  `docs/plans/261031-rate-limit-plan.md`)
+- [proposed] TOOLS-009 Dataset maintenance tools: programmatic helpers to prune database and
+  Redis records (such as expired API key records and stale cache entries), invoked
+  explicitly by each service's cron module rather than by automatic store-side policies such
+  as TTL indexes. Added once the services run together. (refs: pending; consumed by
+  per-service cron modules)

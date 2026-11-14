@@ -1,6 +1,6 @@
 ---
 title: Naming Conventions
-lastUpdate: 2026-10-29
+lastUpdate: 2026-11-13
 category: architecture
 lang: en
 status: published
@@ -18,15 +18,16 @@ this document first, then align implementation.
 House and architecture documents give each section a stable ID, `XX-NN`: a two-letter
 document prefix and a two-digit number (`GP-05`). An ID-bearing section uses the heading
 `### XX-NN Title`. Never reuse or renumber an ID; add new sections with the next free
-number. Prefixes: `SP` SOLID principles, `DP` design patterns, `GP` development good
-practices, `CS` code style, `DS` documents style, `BP` build plans.
+number; when a section is retired, its ID stays unused. Prefixes: `SP` SOLID principles,
+`DP` design patterns, `GP` development good practices, `CS` code style, `DS` documents
+style, `BP` build plans, `BS` build services.
 
 ## Engineering
 
 ### Services
 
 - **Service ids:** single word lowercase name.
-- **Defined ids:** `auth`.
+- **Defined ids:** `auth`, `gateway`.
 - **Repository directory:** `services/{service}/` where `{service}` equals the service id.
 - **Package name:** `@salamandradevs/{service}` (for example `@salamandradevs/auth`).
 
@@ -149,7 +150,25 @@ Each record module under `{service}/src/storage/{plural}/`:
 - Interfaces carry an `I` prefix followed by a capability or role name (`ICrud`,
   `IDataset`, `IDatabaseProvider`, `ISigningKeyProvider`, `IOAuthProvider`).
 - Implementations are named for their vendor and role (`MongoCrud`, `MySqlDataset`,
-  `JoseSigningKeyProvider`, `GoogleOAuthProvider`).
+  `JoseKeysProvider`, `GoogleOAuthProvider`).
+- Application contracts live in the service's `application/contracts.ts` and are named
+  `I{Resources}Service` for use cases (`ISessionsService`); a shared package exports its
+  contracts beside their implementations (`core/src/infra/database/contracts.ts`).
+
+### Singular and plural names
+
+The noun a class or contract name is about takes the plural only when the class owns or
+manages a collection of it; otherwise it stays singular, as a noun used as a modifier
+normally does in English.
+
+- **Plural**: the class holds or manages a set (`RecordsHandler`, `UserRecordsHandler`,
+  `JoseKeysProvider`, which owns a key set). Application use cases follow
+  `{Resources}Service` (`TokensService`, `ISessionsService`).
+- **Singular**: the class processes one item per call and keeps none of them
+  (`DatasetProvisioner.provision(def)`, `AccessTokenVerifier.verify(credential)`,
+  `IVerificationKeyProvider.getPublicKey(kid)`).
+- Schemas and types about one item stay singular (`accessTokenClaimsSchema`,
+  `UserRecord`).
 
 ### Core library (`@salamandradevs/core`)
 
@@ -166,6 +185,41 @@ Established forms (full words remain valid under [Abbreviations](#abbreviations)
   `mysql/mysql-dataset.ts`).
 - **Records layer:** `storage/` holds `RecordsHandler`, `BaseRecord`, `baseRecordSchema`,
   and `recordIndexDef`.
+- **Runtime layer:** `runtime/` holds the execution context (`ExecutionContext`,
+  `runWithExecutionCtx`, `getExecutionCtx`).
+- **Keys layer:** `keys/` holds `ISigningKeyProvider`, `IVerificationKeyProvider`,
+  `IKeysProvider`, the providers (`jose/jose-keys-provider.ts`,
+  `openbao/openbao-keys-provider.ts`, `jwks/jwks-verification-key-provider.ts`), and
+  `createKeysProvider`.
+- **Tokens layer:** `tokens/` holds `IAccessTokenVerifier`, `AccessTokenVerifier`, and
+  `accessTokenClaimsSchema`.
+
+### HTTP library (`@salamandradevs/http`)
+
+Shared Fastify transport: the plugins, hook types, transport schemas, and outbound client
+that `auth` and `gateway` register and consume.
+
+- **Plugins layer:** `plugins/` holds the shared plugins, each `fastifyPlugin`-wrapped with
+  a fixed `http-*` name: `errorsPlugin` (`http-errors`), `recordCursorCodecPlugin`
+  (`http-record-cursor-codec`), `securityPlugin` (`http-security`), `authenticationPlugin`
+  (`http-authentication`), `authorizationPlugin` (`http-authorization`), and
+  `executionContextPlugin` (`http-execution-context`); plugin option, rate-limit, and cursor
+  types live in `plugins/types.ts`.
+- **Schemas layer:** `schemas/` holds `problemDetailsSchema`, `problemResponses`,
+  `paginationQuerySchema`, `createPageSchema`, `recordParamsSchema`, and
+  `rateLimitPolicySchema`, with the inferred `ProblemDetails`, `RecordParams`, and
+  `RateLimitPolicy` types.
+- **Hooks layer:** `hooks/` holds the `PreHandlerHooks` and `OnRequestHooks` hook-array
+  types the service composers specialize.
+- **Client layer:** `client/` holds the outbound `makeApiRequest` and its `ApiResponse` and
+  `ApiRequestOptions` types.
+- **Decorations:** `src/types.ts` declares the Fastify decorations the plugins publish
+  (`authenticateRequest`, `requireAdminRole`, `requireDefaultTenantSession`, `rateLimitHook`,
+  `publicRateLimit`, `exemptRateLimit`, `bindExecutionContext`, `request.sessionGrant`,
+  `request.decodeCursor`, `reply.encodeCursor`).
+
+Service plugins that depend on the shared ones list the `http-*` names as Fastify
+dependencies; for example `auth-tenant` and `gateway-api-key` depend on `http-security`.
 
 ### Dataset and index names
 

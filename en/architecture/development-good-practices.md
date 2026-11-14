@@ -1,6 +1,6 @@
 ---
 title: Development Good Practices
-lastUpdate: 2026-10-25
+lastUpdate: 2026-11-13
 lang: en
 category: architecture
 status: published
@@ -17,7 +17,13 @@ to `core/`, `tools/`, and every service under `services/`.
 Each practice carries a stable ID (`GP-NN`) for citation; IDs follow
 [Document IDs](../house/naming-conventions.md#document-ids). Where the code does not meet a
 practice yet is tracked in the [Architecture Review](../../architecture-review.md), not in
-this guide.
+this guide. How Fastify services apply these practices (transport security, health
+endpoints, request correlation, problem responses) lives in the house
+[Build Services](../house/build-services.md) guide (`BS`).
+
+Retired IDs, never reused: GP-06 merged into GP-05, GP-11 into GP-03, and GP-22 into
+GP-25; the service rules of GP-16, GP-19, and GP-23 moved to BS-02, BS-03, and BS-01, and
+the practices behind them are part of GP-15, GP-18, and GP-25.
 
 ## Terminology used in this guide
 
@@ -61,9 +67,7 @@ and `docs` are the ones the repositories use most:
 The examples are trimmed excerpts from `core/`, `tools/`, and `services/auth/`, including
 their `package.json`, Dockerfile, configuration, and workflow files. Each one starts with a
 comment naming its source file. Counter-examples are marked `Avoid` and are hypothetical:
-they show what would break the practice, not code that exists. Where the real code does
-break a practice, the case is listed in the
-[Architecture Review](../../architecture-review.md) instead.
+they show what would break the practice, not code that exists.
 
 Every section ends with a **Check:** line, a condition a reviewer or an agent can verify in
 the repository.
@@ -116,15 +120,30 @@ Related: GP-03; [SP-05](./solid-principles.md#sp-05-dependency-inversion-princip
 
 **Check:** files under `src/api/` import no module from `#storage/` or `#infra/`.
 
-### GP-03 Contracts at boundaries, wiring at the composition root
+### GP-03 Contracts, composition-root wiring, and configured backends
 
-Code that crosses a boundary depends on a contract, and concrete classes are created only
-in the composition root or in a factory it calls. Constructing collaborators inside policy
-code hides dependencies and blocks substitution and testing.
+A class consumed across a boundary is consumed through a contract, even when it has one
+implementation, and concrete classes are created only in the composition root or in a
+factory it calls. A boundary is a seam between the sections of
+[GP-02](#gp-02-layered-service-structure) (transport, application, storage, external
+adapters), between two use-case modules, or between a service and a shared package. The
+consumer depends only on what it calls, and the composition root decides what it receives,
+so the class behind the contract can be replaced by a second implementation or by a test
+fake without touching the consumer. Constructing collaborators inside policy code hides
+dependencies and blocks both. Backing services (databases, key stores, identity
+providers) are also located by configuration, so replacing or relocating one is a
+configuration change, not a code release.
+
+- **Needs a contract**: transport consuming a use case (`ISessionsService` in
+  `api/types.ts`), a use case consuming another (`ITokensService` in `SessionsService`), and
+  any consumer of an adapter (`ISigningKeyProvider`, `IOAuthProvider`).
+- **Does not**: classes used only inside their own module or only in `runtime/`
+  (`DatabaseProvider`, `DatabaseAdapter`), and records handlers, whose substitution point
+  is the `ICrud` beneath them ([DP-03](./design-patterns.md#dp-03-bridge)).
 
 ```typescript
 // services/auth/src/runtime/services.ts
-const tokens: ITokenService = new TokensService(config.auth, deps.signingKeys);
+const tokens: ITokensService = new TokensService(config.auth, deps.signingKeys);
 const sessions: ISessionsService = new SessionsService(
   deps.sessionRecordsHandler,
   tokens,
@@ -136,15 +155,21 @@ const sessions: ISessionsService = new SessionsService(
 ```typescript
 // Avoid: the service builds its own dependency and its configuration.
 export class SessionsService {
-  private readonly tokens: ITokenService = new TokensService(loadConfig().auth, /* ... */);
+  private readonly tokens: ITokensService = new TokensService(loadConfig().auth, /* ... */);
 }
+
+// Avoid: a backend and its location fixed in code.
+const client: MongoClient = new MongoClient('mongodb://mongo:27017');
 ```
 
-Related: [DP-08](./design-patterns.md#dp-08-composition-root),
+Related: GP-09; [DP-01](./design-patterns.md#dp-01-factory),
+[DP-08](./design-patterns.md#dp-08-composition-root),
 [SP-05](./solid-principles.md#sp-05-dependency-inversion-principle-dip).
 
 **Check:** `new` of an infrastructure class (`MongoCrud`, `DatabaseProvider`, a provider)
-appears only under `runtime/`, `infra/*/factory.ts`, or `core/src/infra/`.
+appears only under `runtime/`, `infra/*/factory.ts`, or `core/src/infra/`; no type under
+`src/api/` or in a use case's constructor names a concrete application or adapter class;
+switching or relocating a backing service changes configuration only.
 
 ### GP-04 Schemas as the single source of truth
 
@@ -174,52 +199,30 @@ Related: [CS-02](../house/code-style.md#cs-02-zod-schemas-and-derived-types).
 
 **Check:** a type that mirrors a schema's fields is declared with `z.infer`.
 
-### GP-05 Declared and locked dependencies
+### GP-05 Locked dependencies and pinned toolchain
 
-Every dependency is declared in `package.json`, the lockfile is committed, and CI and image
-builds install with a frozen lockfile. Without a locked tree, two builds of the same commit
-can resolve different dependencies.
+Every dependency is declared and locked, and installs use the frozen lockfile; pnpm and
+the Node.js major are pinned alike in development, CI, and images, or two builds of one
+commit can differ.
 
 ```dockerfile
 # services/auth/Dockerfile
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+FROM node:22-alpine
+RUN corepack enable && corepack prepare pnpm@12.4.1 --activate
 RUN pnpm install --frozen-lockfile
 ```
 
 ```yaml
-# Avoid: resolves a new tree on every release.
+# Avoid: an unlocked install and a runtime unlike the image.
 - run: pnpm install --no-frozen-lockfile
-```
-
-Related: GP-06, GP-12.
-
-**Check:** `pnpm-lock.yaml` is tracked in git and every install step in CI and in
-Dockerfiles uses `--frozen-lockfile`.
-
-### GP-06 Pinned toolchain
-
-The package manager and the Node.js major version are pinned and match across local
-development, CI, and container images. A build that passes on one runtime and fails on
-another is not reproducible.
-
-```dockerfile
-# services/auth/Dockerfile
-FROM node:22-alpine AS base
-RUN corepack enable && corepack prepare pnpm@12.4.1 --activate
-```
-
-```yaml
-# Avoid: an unpinned tool and a runtime that differs from the image.
-- run: npm install -g npm@latest
 - uses: actions/setup-node@v4
-  with:
-    node-version: '24'
+  with: { node-version: '24' }
 ```
 
-Related: GP-05, GP-21.
+Related: GP-12, GP-21.
 
-**Check:** the Node.js major in every workflow `node-version`, every `FROM node:` line, and
-`engines` agree; tools installed in CI carry an explicit version.
+**Check:** `pnpm-lock.yaml` is tracked and installs use `--frozen-lockfile`;
+`node-version`, `FROM node:`, and `engines` agree; CI tools carry explicit versions.
 
 ### GP-07 Supply-chain safeguards
 
@@ -291,6 +294,10 @@ configuration file carries only a `READ FROM ENV ...` placeholder, and the resol
 is never stored back in the configuration object. Configuration files are committed, copied
 into images, and decorated onto requests; a secret there leaks through all three.
 
+The file is validated (GP-08) before environment values are resolved, so a placeholder
+must pass its field's format: a `baoAddr` validated by `z.url()` uses
+`http://READ-FROM-ENV-BAO_ADDR`, not `READ FROM ENV BAO_ADDR`.
+
 ```typescript
 // services/auth/src/application/config/schema.ts
 hashSecret: z
@@ -307,11 +314,12 @@ const { hashSecret } = loadEnvVariables(refreshTokenConfigSchema);
 "dbServerUri": "mongodb://auth:s3cret@mongo:27017"
 ```
 
-Related: GP-08, GP-11.
+Related: GP-08, GP-03.
 
 **Check:** no committed configuration file contains a credential; every sensitive schema
-field carries `.meta({ env })`; every declared variable appears in `.env.example` and in
-every deployment manifest.
+field carries `.meta({ env })`; every placeholder in a committed configuration file parses
+under its field's schema; every declared variable appears in `.env.example` and in every
+deployment manifest.
 
 ### GP-10 Configuration varies per deployment, not per build
 
@@ -338,38 +346,11 @@ Related: GP-12, GP-21.
 **Check:** the config file is chosen by a deploy-time value that can name any environment,
 and the image does not need to contain environment-specific files.
 
-### GP-11 Backing services are attached resources behind contracts
-
-Databases, key stores, and identity providers are reached through a contract and located
-by configuration, so one can be replaced or relocated without a code change. Hard-wired
-backends turn an infrastructure move into a code release.
-
-```typescript
-// services/auth/src/runtime/database.ts
-const dbProvider: DatabaseProvider = new DatabaseProvider(
-  config.databaseBackend,
-  config.dbServerUri,
-  config.databaseName
-);
-```
-
-```typescript
-// Avoid: a backend and its location fixed in code.
-const client: MongoClient = new MongoClient('mongodb://mongo:27017');
-```
-
-Related: GP-09; [DP-01](./design-patterns.md#dp-01-factory),
-[DP-02](./design-patterns.md#dp-02-adapter).
-
-**Check:** switching a backend changes configuration only; its location and credentials
-follow GP-09.
-
 ### GP-12 Immutable artifacts, deployed by identity
 
-A build produces one immutable artifact per commit, a release combines that artifact with
-deployment configuration, and deployments and rollbacks reference the artifact by an
-immutable identifier (commit SHA or version tag). With a moving tag, "what is running" and
-"how to roll back" have no exact answer.
+A build produces one immutable artifact per commit, and deployments and rollbacks
+reference it by an immutable identifier (commit SHA or version tag). With a moving tag,
+"what is running" and "how to roll back" have no exact answer.
 
 ```yaml
 # services/auth/.github/workflows/deploy.yml
@@ -437,7 +418,7 @@ refresh request.
 private readonly pendingStates = new Map<string, OAuthPendingState>();
 ```
 
-Related: GP-11, GP-15.
+Related: GP-03, GP-15.
 
 **Check:** no long-lived `Map`, array, or module-level variable in a service holds
 request-derived state.
@@ -446,8 +427,10 @@ request-derived state.
 
 A service starts without manual steps, releases every resource it opened on
 `SIGTERM`/`SIGINT`, and releases already-opened resources when startup fails part way.
-Orchestrators stop and move processes routinely; a process that leaks connections or hangs
-on stop degrades the platform.
+While it runs, it tells its orchestrator whether it is alive and whether it can serve,
+so traffic reaches only an instance whose required backing services are reachable.
+Orchestrators start, stop, and move processes routinely; a process that leaks
+connections, hangs on stop, or takes traffic it cannot serve degrades the platform.
 
 ```typescript
 // services/auth/src/runtime/runtime.ts
@@ -469,38 +452,11 @@ process.once('SIGTERM', shutdown);
 process.on('SIGTERM', () => process.exit(0));
 ```
 
-Related: GP-14, GP-16.
+Related: GP-14, GP-03;
+[BS-02](../house/build-services.md#bs-02-liveness-and-readiness).
 
 **Check:** every resource opened in `runtime/` is closed on both the failure path and the
-shutdown path.
-
-### GP-16 Liveness and readiness
-
-A service exposes a liveness check (the process responds) and a readiness check (its
-required backing services are reachable), and the container definition uses them. Without
-readiness, traffic reaches an instance that cannot serve it.
-
-```typescript
-// services/auth/src/api/routes/health/controller.ts
-const response: HealthResponse = {
-  service: 'auth',
-  status: 'ok',
-  timestamp: new Date().toISOString()
-};
-```
-
-```yaml
-# Avoid: a container definition with no health check, so a broken instance stays in
-# rotation until someone notices.
-services:
-  auth:
-    image: ghcr.io/salamandradevs/auth:<sha>
-```
-
-Related: GP-15, GP-11.
-
-**Check:** a readiness endpoint exists and the Dockerfile or compose file declares a
-`HEALTHCHECK` or `healthcheck`.
+shutdown path, and every deployed process declares a health check its orchestrator uses.
 
 ### GP-17 Administrative tasks are idempotent and operator-owned
 
@@ -538,8 +494,11 @@ Related: GP-15.
 ### GP-18 Logs as an event stream
 
 Services write structured logs to stdout and leave routing and storage to the environment,
-with the level configurable per deployment. Files inside containers are lost with the
-container and are invisible to log collectors.
+with the level configurable per deployment. Every log line carries the correlation id of
+the unit of work it belongs to (a request, a job, a message); the id is accepted from the
+caller when present and forwarded on every call to another platform service. Files inside
+containers are lost with the container and are invisible to log collectors, and log lines
+without a correlation id cannot be traced to one failure across lines or services.
 
 ```typescript
 // services/auth/src/api/api.ts
@@ -556,157 +515,83 @@ const base: FastifyInstance = Fastify({
 ```typescript
 // Avoid: logs written to a file inside the container.
 logger: { level: 'info', file: '/app/logs/auth.log' }
-```
 
-Related: GP-19, GP-20.
-
-**Check:** no code writes log files; every logging variable is passed by every deployment
-manifest.
-
-### GP-19 Request correlation
-
-Every request carries a correlation id that is accepted from the caller when present,
-attached to every log line, and available to downstream code. Without it, one failing
-request cannot be traced across log lines or services.
-
-```typescript
-// services/auth/src/api/plugins/execution-context.ts
-const executionContext: ExecutionContext = {
-  authenticated: { actorId: request.sessionGrant.actorId, /* ... */ },
-  request: { requestId: request.id }
-};
-```
-
-Fastify fills `request.id` from the `x-request-id` header configured in GP-18.
-
-```typescript
 // Avoid: a call to another platform service that drops the correlation id.
 await fetch(`${profilesUrl}/v1/persons/${recordId}`);
 ```
 
-Related: GP-18; [DP-09](./design-patterns.md#dp-09-ambient-context).
+Related: GP-20; [DP-09](./design-patterns.md#dp-09-ambient-context);
+[BS-03](../house/build-services.md#bs-03-request-correlation).
 
-**Check:** outbound calls to other platform services forward `x-request-id`.
+**Check:** no code writes log files; every logging variable is passed by every deployment
+manifest; outbound calls to other platform services forward the correlation id.
 
 ### GP-20 Classified errors
 
 Every error that code throws is a `CustomError` with a deliberate `ErrorName`
-([CS-04](../house/code-style.md#cs-04-errors)), and transport maps names to RFC 9457
-problem responses with stable problem `type` URIs. Unclassified errors reach clients as
-generic 500s and cannot be alerted on.
+([CS-04](../house/code-style.md#cs-04-errors)), and a vendor or driver failure is
+converted at the adapter that catches it, keeping the original as the cause. Every
+boundary that exposes errors to a client maps those names to a stable, documented
+response. Unclassified errors reach clients as generic failures and cannot be alerted on.
 
 ```typescript
-// services/auth/src/api/plugins/errors.ts
-} else if (error.name === 'RESOURCE_NOT_FOUND') {
-  status = 404;
-  type = 'https://api.slmdevs.com/problems/resource-not-found';
+// core/src/infra/database/mongo/mongo-crud.ts
+} catch (error: unknown) {
+  if (isMongoDupKeyError(error)) {
+    throw new CustomError({
+      name: 'DB_DUPLICATE_KEY_ERROR',
+      message: errMessages.DB_DUPLICATE_KEY,
+      cause: error
+    });
+  }
+
+  throw new CustomError({
+    name: 'DB_BACKEND_ERROR',
+    message: 'Failed to create MongoDB record',
+    cause: error
+  });
+}
 ```
 
 ```typescript
-// Avoid: an unclassified error that the handler can only report as 500.
+// Avoid: an unclassified error that the boundary can only report as a generic failure.
 throw new Error('User not found');
 ```
 
-Related: GP-18.
+Related: GP-18; [BS-04](../house/build-services.md#bs-04-problem-responses).
 
 **Check:** no `throw new Error` or `throw new TypeError` escapes a function without being
-wrapped in a `CustomError`; every problem `type` URI uses one base URL.
+wrapped in a `CustomError`.
 
 ### GP-21 Development and production parity
 
-Development uses the same kinds of backing services and the same container image as
-production, and every difference is explicit, named, and limited to adapters selected by
-configuration. A backend used only in production hides failures until release.
+Development uses the same kinds of backing services as production, and every difference
+is explicit, named, and limited to adapters selected by configuration. A backend used only
+in production hides failures until release.
 
 ```typescript
-// services/auth/src/infra/keys/factory.ts
-case 'jose': {
-  process.emitWarning(
-    'JoseSigningKeyProvider is a development provider; private keys live in a local ' +
-      'encrypted file on a single host. Use a vault provider in production.',
-    { code: 'DEV_SIGNING_KEY_PROVIDER' }
-  );
-
-  return new JoseSigningKeyProvider(config.provider, config.algorithm);
+// Avoid: a development-only adapter that starts silently, so a misconfiguration ships it
+// to production unnoticed.
+case 'dev-insecure': {
+  return new InsecureDevKeyProvider(config.provider);
 }
 ```
 
 `docker-compose.dev.yml` builds the same Dockerfile and joins the same `services` network
-with MongoDB and OpenBao.
+with MongoDB and OpenBao. `JoseKeysProvider` is not a development-only adapter: it is a
+production provider for small deployments (one host or replicas sharing one key file), so
+it announces nothing.
 
 ```yaml
 # Avoid: a development-only database engine that production never runs.
 databaseBackend: sqlite
 ```
 
-Related: GP-10, GP-06.
+Related: GP-10, GP-05.
 
 **Check:** every development-only adapter announces itself at startup and is rejected or
-warned about in production configuration.
-
-### GP-22 Least privilege
-
-Processes, tokens, and policies hold only the permissions their work needs, so a
-compromised component cannot escalate or destroy data.
-
-```dockerfile
-# services/auth/Dockerfile
-RUN addgroup -S nodegroup && adduser -S nodeuser -G nodegroup
-USER nodeuser
-```
-
-```hcl
-# docs/en/howto/openbao/auth-signing-policy.hcl
-path "transit/sign/auth-signing-*" {
-  capabilities = ["update"]
-}
-
-path "secret/data/auth/signing-lifecycle" {
-  capabilities = ["read"]
-}
-```
-
-```hcl
-# Avoid: a service token that can also rewrite or destroy its own keys.
-path "transit/keys/*" {
-  capabilities = ["create", "update", "delete"]
-}
-```
-
-Related: GP-09, GP-23.
-
-**Check:** no container runs as root, and each token's policy lists only the operations the
-service performs.
-
-### GP-23 Secure transport defaults
-
-HTTP services enable security headers, explicit CORS, rate limits on every unauthenticated
-endpoint that creates or changes state, and secure cookie attributes. Defaults are what
-ship when nobody remembers to configure them.
-
-```typescript
-// services/auth/src/api/plugins/security.ts
-await fastify.register(helmet);
-await fastify.register(cors, { origin: false, credentials: false });
-await fastify.register(rateLimit, { global: false });
-
-// services/auth/src/api/routes/v1/session/routes.ts
-config: { rateLimit: { max: 5, timeWindow: '1 minute' } },
-```
-
-The rate limiter is registered with `global: false`, so each route opts in; sign-in and
-public registration do. The refresh cookie is `__Host-` prefixed with `secure`,
-`httpOnly`, and `sameSite`.
-
-```typescript
-// Avoid: an unauthenticated route that stores state per call, with no limit.
-fastify.get('/:provider/authorize', { schema: { /* ... */ } }, startOAuthBrowserFlow);
-```
-
-Related: GP-22, GP-14.
-
-**Check:** every unauthenticated route that creates or changes state declares
-`config.rateLimit`.
+warned about in production configuration; an adapter fit for production, such as
+`JoseKeysProvider`, carries no such warning.
 
 ### GP-24 Tests at contract seams
 
@@ -725,7 +610,13 @@ export async function buildApi(options: BuildApiOptions): Promise<ZodFastifyInst
 
 Because `buildApi` takes its services as options and binds no port, a test can inject
 fakes for `ICrud`, `ISigningKeyProvider`, and `IOAuthProvider` and call `app.inject`. The
-strategy is planned in `docs/plans/tests-suite.md`.
+strategy is planned in `docs/plans/261029-tests-suite-plan.md`.
+
+Contracts are what make those fakes cheap. TypeScript compares a class with `private`
+members nominally, so a plain object cannot stand in for `SessionsService`, but it can
+stand in for `ISessionsService`. A transport test fakes the use cases and checks routing,
+hooks, and error mapping; a use-case test fakes the contracts it consumes and checks
+policy; neither needs a backing service.
 
 ```typescript
 // Avoid: a unit test that needs a live database to check a validation rule.
@@ -734,20 +625,67 @@ const crud: ICrud<UserRecord> = new MongoCrud(realMongoDb.collection('users'));
 
 Related: GP-13, GP-03.
 
-**Check:** each package has a test command that runs in CI.
+**Check:** no fast-tier test opens a connection to a backing service; fakes enter through
+the same contracts the composition root injects.
+
+### GP-25 Secure by default and least privilege
+
+Every new component that exposes or grants something (an HTTP route, a CLI command, a
+message consumer, a token, a cookie, a container, an access policy) is created in its
+most restrictive state, and while it runs it holds only the permissions its work needs, so
+a compromised component cannot escalate or destroy data. Loosening either is an explicit,
+named declaration in code or configuration, and when a required declaration is missing
+the component refuses to start or build instead of falling back to open. A safe state that
+must be remembered is lost the first time someone forgets it.
+
+```typescript
+// http/src/plugins/security.ts
+fastify.addHook('onRoute', (routeOptions: RouteOptions): void => {
+  const onRequest: unknown[] = [routeOptions.onRequest ?? []].flat();
+  const tiers: number = onRequest.filter(
+    (hook: unknown): boolean => hook === publicRateLimit || hook === exemptRateLimit
+  ).length;
+
+  if (tiers !== 1 || routeOptions.config?.rateLimit !== undefined) {
+    throw new CustomError({
+      name: 'CONFIG_ERROR',
+      message: `Route ${String(routeOptions.method)} ${url} needs one rate-limit tier`
+    });
+  }
+});
+```
+
+```dockerfile
+# services/auth/Dockerfile
+USER nodeuser
+```
+
+A new route cannot start unlimited, and the exempt tier is the only, reviewable way out.
+
+```typescript
+// Avoid: a component that is open unless someone remembers to close it.
+const requireAuth: boolean = options.requireAuth ?? false;
+```
+
+```hcl
+# Avoid: a service token that can also rewrite or destroy its own keys.
+path "transit/keys/*" {
+  capabilities = ["create", "update", "delete"]
+}
+```
+
+Related: GP-08, GP-09, GP-20;
+[BS-01](../house/build-services.md#bs-01-secure-transport-defaults).
+
+**Check:** every relaxation of a security or exposure default is an explicit declaration,
+and no component falls back to open when it is missing; no container runs as root, and
+each token's policy lists only the operations the service performs.
 
 ## Benefits and trade-offs
 
-Applied together, these practices give the platform:
-
-- **Reproducibility**: the same commit builds the same artifact (GP-05, GP-06, GP-12).
-- **Safe configuration**: invalid settings stop startup and secrets stay out of files and
-  images (GP-08, GP-09, GP-10).
-- **Replaceable infrastructure**: backing services swap by configuration (GP-11, GP-21).
-- **Operability**: processes start, stop, and report health predictably, and failures are
-  classified and traceable (GP-14 to GP-20).
-- **Contained damage**: least privilege and secure defaults limit what a compromise can do
-  (GP-22, GP-23).
+Applied together, these practices make builds reproducible (GP-05, GP-12), configuration
+safe (GP-08 to GP-10), infrastructure replaceable (GP-03, GP-21), processes operable and
+traceable (GP-14 to GP-20), and damage contained (GP-25).
 
 The practices have costs. Pinned toolchains need deliberate upgrades, CI gates slow every
 change slightly, and readiness checks add work to every backing service. Apply them in
@@ -755,48 +693,22 @@ proportion: a practice marked "should" may be skipped with a documented reason.
 
 Two deliberate deviations from the Twelve-Factor App are accepted:
 
-- **Configuration file plus environment secrets**: configuration lives in a validated JSON
-  file, not entirely in environment variables. Only secrets and credentials come from the
-  environment (GP-09). The file gives one reviewed, schema-checked document per
-  deployment; the cost is that it must stay free of secrets.
+- **Configuration file plus environment secrets**: one validated JSON file per deployment
+  holds the configuration, and only secrets come from the environment (GP-09); the cost is
+  that the file must stay free of secrets.
 - **Startup tasks instead of one-off processes**: dataset provisioning and bootstrap-admin
-  reconciliation run at every startup. Both are idempotent (GP-17), so running them on each
-  start is safe and removes a manual step.
+  reconciliation run at every startup, which is safe because both are idempotent (GP-17).
 
 ## Relation to the Twelve-Factor App
 
-How each factor maps to the practices above:
-
-- **I Codebase**: [GP-01](#gp-01-one-repository-per-package-or-service).
-- **II Dependencies**: [GP-05](#gp-05-declared-and-locked-dependencies),
-  [GP-06](#gp-06-pinned-toolchain), [GP-07](#gp-07-supply-chain-safeguards).
-- **III Config**: [GP-08](#gp-08-validated-configuration-fail-fast),
-  [GP-09](#gp-09-secrets-and-credentials-only-from-the-environment),
-  [GP-10](#gp-10-configuration-varies-per-deployment-not-per-build).
-- **IV Backing services**:
-  [GP-11](#gp-11-backing-services-are-attached-resources-behind-contracts).
-- **V Build, release, run**: [GP-12](#gp-12-immutable-artifacts-deployed-by-identity),
-  [GP-13](#gp-13-quality-gates-run-in-ci).
-- **VI Processes**: [GP-14](#gp-14-stateless-processes).
-- **VII Port binding**: met by Fastify listening on `http.host` and `http.port`; no
-  separate practice.
-- **VIII Concurrency**: met by stateless processes (GP-14); no separate practice until a
-  service needs worker process types.
-- **IX Disposability**: [GP-15](#gp-15-disposability-fast-start-graceful-stop),
-  [GP-16](#gp-16-liveness-and-readiness).
-- **X Dev/prod parity**: [GP-21](#gp-21-development-and-production-parity).
-- **XI Logs**: [GP-18](#gp-18-logs-as-an-event-stream).
-- **XII Admin processes**:
-  [GP-17](#gp-17-administrative-tasks-are-idempotent-and-operator-owned).
-
-Where the platform goes beyond the factors:
-
-- **Architecture inside the process**: layers, contracts, and a composition root (GP-02,
-  GP-03), which the factors leave open.
-- **Shared definitions**: schemas as the single source of truth (GP-04) and classified
-  errors (GP-20).
-- **Operational safety**: supply-chain safeguards (GP-07), readiness (GP-16), correlation
-  ids (GP-19), security defaults (GP-22, GP-23), and testing (GP-24).
+- **I Codebase**: GP-01. **II Dependencies**: GP-05, GP-07. **III Config**: GP-08 to GP-10.
+- **IV Backing services**: GP-03. **V Build, release, run**: GP-12, GP-13.
+- **VI Processes** and **VIII Concurrency**: GP-14; no worker process types yet.
+- **VII Port binding**: Fastify listens on `http.host` and `http.port`; no practice.
+- **IX Disposability**: GP-15. **X Dev/prod parity**: GP-21. **XI Logs**: GP-18.
+- **XII Admin processes**: GP-17.
+- **Beyond the factors**: layers and contracts (GP-02, GP-03), schemas (GP-04), classified
+  errors (GP-20), supply chain (GP-07), tests (GP-24), and secure defaults (GP-25).
 
 ## References
 

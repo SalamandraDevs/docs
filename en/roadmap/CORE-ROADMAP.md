@@ -1,6 +1,6 @@
 ---
 title: Core Library Roadmap
-lastUpdate: 2026-10-25
+lastUpdate: 2026-11-11
 lang: en
 category: planning
 status: active
@@ -28,7 +28,7 @@ record handling, and request execution context.
   deterministic cursor pagination ordered by `createdAt` then `recordId`, both descending.
   (refs: `src/records/records-handler.ts`)
 - [implemented] CORE-006 Execution context: AsyncLocalStorage carrying actor, tenant, and
-  request id. (refs: `src/utils/context.ts`)
+  request id. (refs: `src/runtime/context.ts`)
 - [implemented] CORE-008 Database provider and backend-bound adapters: `DatabaseProvider`
   (`IDatabaseProvider`) owns backend selection and connection lifecycle, exposing a
   discriminated `DatabaseHandle`, and `DatabaseAdapter` selects the backend once to
@@ -38,3 +38,28 @@ record handling, and request execution context.
   `src/infra/database/database-adapter.ts`)
 - [proposed] CORE-007 MySQL schema conversion: depends on
   [TOOLS-005](./TOOLS-ROADMAP.md#tools-features).
+- [implemented] CORE-009 Keys providers: `ISigningKeyProvider`, `IVerificationKeyProvider`,
+  and `IKeysProvider`; the Jose, OpenBao, and remote-JWKS providers; the signing lifecycle
+  schemas; and `createKeysProvider`. Moved from `services/auth` so services share one
+  implementation, each with its own keys.
+  (refs: `src/keys/`, `docs/plans/261106-gateway-plan.md`)
+- [implemented] CORE-010 Access-token verification: `IAccessTokenVerifier`,
+  `AccessTokenVerifier`, and `accessTokenClaimsSchema`, so the issuer and every verifier
+  share one claim definition and one verification flow.
+  (refs: `src/tokens/`, `docs/plans/261106-gateway-plan.md`)
+- [implemented] CORE-011 Unpaged cross-tenant find-all: `ICrud.findAll` and
+  `RecordsHandler.findAll` return every matching record without pagination, deliberately
+  bypassing tenant scope and the execution context for process-wide scans such as the
+  gateway's revocation rebuild; `FindAllOptions` carries a `number | null` cap, optional
+  order, and backend-neutral `greaterThan`/`lessThan` bounds translated per adapter, and
+  `assertFindAllFilter` rejects an unfiltered scan.
+  (refs: `src/infra/database/contracts.ts`, `src/infra/database/mongo/mongo-crud.ts`,
+  `src/infra/database/mysql/mysql-crud.ts`, `src/storage/records-handler.ts`,
+  `src/infra/database/utils.ts`)
+- [implemented] CORE-012 API key verification: `IApiKeyVerifier`, `ApiKeyVerifier`,
+  `apiKeyPlanSchema`, `apiKeyVerifyConfigSchema`, and `apiKeyPayloadSchema`, so the gateway
+  issuer and every verifier share one key format, payload schema, and verification flow;
+  the verifier reads the prefix and length ceiling from configuration and makes no
+  revocation decision.
+  (refs: `src/tokens/api-key-verifier.ts`,
+  `docs/plans/261111-api-key-verification-plan.md`)

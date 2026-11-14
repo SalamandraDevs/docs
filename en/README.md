@@ -1,6 +1,6 @@
 ---
 title: Salamandra Devs Documentation
-lastUpdate: 2026-10-29
+lastUpdate: 2026-11-13
 lang: en
 category: guide
 status: active
@@ -15,7 +15,9 @@ improve it together, and keep practices aligned across projects.
 This repository is open to contributions from members and collaborators. If you use these
 docs, spot a gap, or want to document something new, you are welcome to participate.
 
-**Other languages:** [Índice en español](../es/README.md)
+**Other languages:** [Índice en español](../es/README.md). Some Spanish translations lag
+behind the English documents; see
+[Pending translations](../lang-mappings.md#pending-translations).
 
 ## Table of contents
 
@@ -42,16 +44,16 @@ Software design principles, patterns, and practices used across Salamandra Devs 
 - [Design Patterns](./architecture/design-patterns.md): the creational, structural,
   behavioral, and application-architecture patterns the Salamandra Devs code uses today
   (DP-01 through DP-10), grouped by category with the problem each one solves.
-- [Development Good Practices](./architecture/development-good-practices.md): general
-  guidance on modularity, encapsulation, and maintainable system design, with practical
-  examples.
+- [Development Good Practices](./architecture/development-good-practices.md): the
+  build, configuration, runtime, and delivery practices (GP-01 through GP-25) that keep
+  packages and services reproducible, deployable, observable, and secure by default.
 
 ### House
 
 Platform-wide conventions for code, documentation, and source-level API comments.
 
 - [Code Style](./house/code-style.md): TypeScript and general code style; imports, Zod
-  schemas, wrappers, errors, modules, blank lines, and RESTful API route hooks.
+  schemas, wrappers, errors, modules, blank lines, and delegated operation names.
 - [Documents Style Guide](./house/documents-style-guide.md): Markdown style, wording,
   frontmatter, status values, and TypeDoc source comments, with worked examples.
 - [Naming Conventions](./house/naming-conventions.md): the single naming standard for
@@ -59,6 +61,10 @@ Platform-wide conventions for code, documentation, and source-level API comments
   scheme.
 - [Build Plans](./house/build-plans.md): required sections, citation of architecture and
   house rules, and the compliance review for plans under `docs/plans/`.
+- [Build Services](./house/build-services.md): how Fastify services apply the good
+  practices; transport security and rate-limit tiers, liveness and readiness, request
+  correlation, RFC 9457 problem responses, and route hook composition (BS-01 through
+  BS-08).
 
 ### Roadmap
 

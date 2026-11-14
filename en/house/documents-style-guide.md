@@ -1,6 +1,6 @@
 ---
 title: Documents Style Guide
-lastUpdate: 2026-10-29
+lastUpdate: 2026-11-13
 lang: en
 category: guide
 status: published
@@ -116,6 +116,14 @@ Document lifecycle states:
   preserved for historical reference but should not guide new work.
 - `proposed`: document describes a planned change or new feature under discussion. Content
   may be speculative and subject to revision before implementation begins.
+- `approved`: document describes a planned change whose review accepted it; implementation
+  may start. Content changes only through another review.
+
+Build plans use `proposed`, `approved`, `published`, and `archived`, in that order, as
+[BP-01 Location, name, and status](./build-plans.md#bp-01-location-name-and-status)
+defines. For a plan, `published` means the work is implemented, and `archived` means a
+later plan replaced its approach; a finished plan is not archived only because it is
+complete.
 
 Feature status tags (`implemented`, `planned`, `proposed`, `canceled`) are not frontmatter
 values; they mark individual features inline. Their definitions, the roadmap line format,
