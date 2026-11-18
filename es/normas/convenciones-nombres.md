@@ -1,6 +1,6 @@
 ---
 title: Convenciones de nombres
-lastUpdate: 2026-10-24
+lastUpdate: 2026-11-18
 lang: es
 category: arquitectura
 status: published
@@ -19,16 +19,17 @@ difieran, siga primero este documento y luego alinee la implementación.
 Los documentos de la casa y de arquitectura dan a cada sección un ID estable, `XX-NN`: un
 prefijo de documento de dos letras y un número de dos dígitos (`GP-05`). Una sección con ID
 usa el encabezado `### XX-NN Título`. Nunca reutilice ni renumere un ID; añada secciones
-nuevas con el siguiente número libre. Prefijos: `SP` principios SOLID, `DP` patrones de
-diseño, `GP` buenas prácticas de desarrollo, `CS` estilo de código, `DS` estilo de
-documentos.
+nuevas con el siguiente número libre; cuando una sección se retira, su ID queda sin usar.
+Prefijos: `SP` principios SOLID, `DP` patrones de diseño, `GP` buenas prácticas de
+desarrollo, `CS` estilo de código, `DS` estilo de documentos, `BP` construir planes, `BS`
+construir servicios.
 
 ## Ingeniería
 
 ### Servicios
 
 - **Ids de servicio:** nombre de una sola palabra en minúsculas.
-- **Ids definidos:** `auth`.
+- **Ids definidos:** `auth`, `gateway`.
 - **Directorio del repositorio:** `services/{service}/` donde `{service}` equivale al id del
   servicio.
 - **Nombre del paquete:** `@salamandradevs/{service}` (por ejemplo `@salamandradevs/auth`).
@@ -157,7 +158,26 @@ Cada módulo de registro bajo `{service}/src/storage/{plural}/`:
 - Las interfaces llevan un prefijo `I` seguido de un nombre de capacidad o rol (`ICrud`,
   `IDataset`, `IDatabaseProvider`, `ISigningKeyProvider`, `IOAuthProvider`).
 - Las implementaciones se nombran por su proveedor y rol (`MongoCrud`, `MySqlDataset`,
-  `JoseSigningKeyProvider`, `GoogleOAuthProvider`).
+  `JoseKeysProvider`, `GoogleOAuthProvider`).
+- Los contratos de aplicación viven en el `application/contracts.ts` del servicio y se
+  nombran `I{Resources}Service` para los casos de uso (`ISessionsService`); un paquete
+  compartido exporta sus contratos junto a sus implementaciones
+  (`core/src/infra/database/contracts.ts`).
+
+### Nombres en singular y plural
+
+El sustantivo del que trata el nombre de una clase o de un contrato va en plural solo
+cuando la clase posee o gestiona una colección de ese sustantivo; si no, queda en singular,
+como suele quedar en inglés un sustantivo que actúa de modificador.
+
+- **Plural**: la clase guarda o gestiona un conjunto (`RecordsHandler`,
+  `UserRecordsHandler`, `JoseKeysProvider`, que posee un conjunto de claves). Los casos de
+  uso de aplicación siguen `{Resources}Service` (`TokensService`, `ISessionsService`).
+- **Singular**: la clase procesa un elemento por llamada y no conserva ninguno
+  (`DatasetProvisioner.provision(def)`, `AccessTokenVerifier.verify(credential)`,
+  `IVerificationKeyProvider.getPublicKey(kid)`).
+- Los esquemas y tipos sobre un solo elemento quedan en singular
+  (`accessTokenClaimsSchema`, `UserRecord`).
 
 ### Librería core (`@salamandradevs/core`)
 
@@ -175,6 +195,43 @@ Formas establecidas (las palabras completas siguen siendo válidas bajo
   `mysql/mysql-dataset.ts`).
 - **Capa de registros:** `storage/` contiene `RecordsHandler`, `BaseRecord`,
   `baseRecordSchema` y `recordIndexDef`.
+- **Capa de runtime:** `runtime/` contiene el contexto de ejecución (`ExecutionContext`, el
+  contrato `IExecutionCtxProvider` y `execution-ctx-provider.ts` → `ExecutionCtxProvider`).
+- **Capa de claves:** `keys/` contiene `ISigningKeyProvider`, `IVerificationKeyProvider`,
+  `IKeysProvider`, los proveedores (`jose/jose-keys-provider.ts`,
+  `openbao/openbao-keys-provider.ts`, `jwks/jwks-verification-key-provider.ts`) y
+  `createKeysProvider`.
+- **Capa de tokens:** `tokens/` contiene `IAccessTokenVerifier`, `AccessTokenVerifier` y
+  `accessTokenClaimsSchema`.
+
+### Librería HTTP (`@salamandradevs/http`)
+
+Transporte Fastify compartido: los plugins, los tipos de hook, los esquemas de transporte y
+el cliente saliente que `auth` y `gateway` registran y consumen.
+
+- **Capa de plugins:** `plugins/` contiene los plugins compartidos, cada uno envuelto con
+  `fastifyPlugin` y un nombre `http-*` fijo: `errorsPlugin` (`http-errors`),
+  `recordCursorCodecPlugin` (`http-record-cursor-codec`),
+  `securityPlugin` (`http-security`), `authenticationPlugin` (`http-authentication`),
+  `authorizationPlugin` (`http-authorization`) y `executionContextPlugin`
+  (`http-execution-context`); los tipos de opción de plugin, de límite de tasa y de cursor
+  viven en `plugins/types.ts`.
+- **Capa de esquemas:** `schemas/` contiene `problemDetailsSchema`, `problemResponses`,
+  `paginationQuerySchema`, `createPageSchema`, `recordParamsSchema` y
+  `rateLimitPolicySchema`, con los tipos inferidos `ProblemDetails`, `RecordParams` y
+  `RateLimitPolicy`.
+- **Capa de hooks:** `hooks/` contiene los tipos de arreglo de hooks `PreHandlerHooks` y
+  `OnRequestHooks` que los compositores de servicio especializan.
+- **Capa de cliente:** `client/` contiene el `makeApiRequest` saliente y sus tipos
+  `ApiResponse` y `ApiRequestOptions`.
+- **Decoraciones:** `src/types.ts` declara las decoraciones de Fastify que publican los
+  plugins (`authenticateRequest`, `requireAdminRole`, `requireDefaultTenantSession`,
+  `rateLimitHook`, `publicRateLimit`, `exemptRateLimit`, `bindExecutionContext`,
+  `request.sessionGrant`, `request.decodeCursor`, `reply.encodeCursor`).
+
+Los plugins de servicio que dependen de los compartidos listan los nombres `http-*` como
+dependencias de Fastify; por ejemplo `auth-tenant` y `gateway-api-key` dependen de
+`http-security`.
 
 ### Nombres de dataset e índice
 
@@ -233,7 +290,7 @@ Dos abreviaturas no deben aparecer una tras otra en el mismo símbolo.
 | Definition | `Def` | `DatasetDef`, `userDatasetDef` |
 | Identifier | `Id` | `recordId`, `tenantId`, `actorId` (sufijo de campo) |
 | Configuration | `Config` | `config/`, `ServiceConfig` |
-| Context | `Ctx` | `getExecutionCtx`, `runWithExecutionCtx` |
+| Context | `Ctx` | `IExecutionCtxProvider`, `ExecutionCtxProvider` |
 | Create, Read, Update, Delete | `Crud` | `ICrud`, `MongoCrud` |
 
 **Nunca**
@@ -260,4 +317,3 @@ elegidos según la convención del equipo.
 
 - **Nombres de ramas de flujo:** solo palabras sueltas en minúsculas; sin mayúsculas,
   separadores ni casing mezclado.
-</content>

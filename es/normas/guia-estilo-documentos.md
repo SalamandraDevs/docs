@@ -1,6 +1,6 @@
 ---
 title: Guía de estilo de documentos
-lastUpdate: 2026-10-27
+lastUpdate: 2026-11-18
 lang: es
 category: guia
 status: published
@@ -63,6 +63,8 @@ especificaciones de diseño en toda la plataforma.
 
 ### DS-03 Planes y requisitos de diseño
 
+- Escriba los planes de construcción con las secciones y reglas de
+  [Construir planes](./construir-planes.md).
 - No cree diagramas de flujo en los planes ni en los requisitos de diseño.
 - Use encabezados descriptivos y listas para estructurar los documentos de diseño.
 - Referencie los principios arquitectónicos y los patrones existentes de
@@ -128,6 +130,15 @@ Estados del ciclo de vida del documento:
 - `proposed`: el documento describe un cambio planificado o una funcionalidad nueva en
   discusión. El contenido puede ser especulativo y estar sujeto a revisión antes de que
   comience la implementación.
+- `approved`: el documento describe un cambio planificado cuya revisión lo aceptó; la
+  implementación puede empezar. El contenido cambia solo mediante otra revisión.
+
+Los planes de construcción usan `proposed`, `approved`, `published` y `archived`, en ese
+orden, como define
+[BP-01 Ubicación, nombre y estado](./construir-planes.md#bp-01-ubicación-nombre-y-estado).
+Para un plan, `published` significa que el trabajo está implementado, y `archived` significa
+que un plan posterior reemplazó su enfoque; un plan terminado no se archiva solo porque esté
+completo.
 
 Las etiquetas de estado de funcionalidad (`implementado`, `planificado`, `propuesto`,
 `cancelado`) no son valores del frontmatter; marcan funcionalidades individuales en línea.
@@ -384,4 +395,3 @@ export class DatasetProvisioner ... implements IDatasetProvisioner<TDef> {}
  */
 getHandle(): DatabaseHandle;
 ```
-</content>

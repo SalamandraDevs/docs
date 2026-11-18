@@ -1,6 +1,6 @@
 ---
 title: Patrones de diseño
-lastUpdate: 2026-10-25
+lastUpdate: 2026-11-18
 lang: es
 category: arquitectura
 status: published
@@ -29,7 +29,7 @@ Cada patrón lleva un ID estable (`DP-NN`) para su citación; los IDs siguen
 - **Contrato**: una `interface` o tipo función que describe lo que necesita quien llama
   (`ICrud`, `ISigningKeyProvider`, `SchemaConverter`). También llamado puerto.
 - **Implementación**: una clase que cumple un contrato con una tecnología específica
-  (`MongoCrud`, `OpenBaoSigningKeyProvider`). También llamada adaptador cuando envuelve una
+  (`MongoCrud`, `OpenBaoKeysProvider`). También llamada adaptador cuando envuelve una
   API de proveedor.
 - **Raíz de composición**: el código de arranque que construye los objetos concretos y los
   inyecta (`services/auth/src/runtime/`).
@@ -66,15 +66,15 @@ define Factory Method (las subclases deciden el producto) y Abstract Factory (fa
 productos relacionados). La plataforma usa una forma más simple y común: una **factoría
 parametrizada**, una función o constructor que elige la clase concreta a partir de un valor.
 
-`createSigningKeyProvider` construye el proveedor de clave de firma nombrado en la
+`createKeysProvider` construye el proveedor de clave de firma nombrado en la
 configuración:
 
 ```typescript
-// services/auth/src/infra/keys/factory.ts
-export function createSigningKeyProvider(config: SigningKeysConfig): ISigningKeyProvider {
+// core/src/keys/factory.ts
+export function createKeysProvider(config: SigningKeysConfig): ISigningKeyProvider {
   switch (config.provider.name) {
     case 'openbao': {
-      return new OpenBaoSigningKeyProvider(
+      return new OpenBaoKeysProvider(
         config.provider,
         config.algorithm,
         config.jwks.cacheMaxAgeSecs
@@ -82,7 +82,7 @@ export function createSigningKeyProvider(config: SigningKeysConfig): ISigningKey
     }
 
     case 'jose': {
-      return new JoseSigningKeyProvider(config.provider, config.algorithm);
+      return new JoseKeysProvider(config.provider, config.algorithm);
     }
 
     default: {
@@ -106,8 +106,8 @@ El patrón se rompe cuando quien llama elige la clase por su cuenta:
 // Evitar: cada quien llama repite la selección e importa cada proveedor.
 const provider: ISigningKeyProvider =
   config.provider.name === 'openbao'
-    ? new OpenBaoSigningKeyProvider(config.provider, config.algorithm, 300)
-    : new JoseSigningKeyProvider(config.provider, config.algorithm);
+    ? new OpenBaoKeysProvider(config.provider, config.algorithm, 300)
+    : new JoseKeysProvider(config.provider, config.algorithm);
 ```
 
 Principio relacionado: **OCP**, con una contrapartida: un producto nuevo significa un `case`
@@ -325,7 +325,7 @@ fastify.delete<{ Params: RecordParams }>(
 (`AUTHENTICATION_FAILED`) o no se verifica, de modo que `requireAdminRole` y el controlador
 nunca se ejecutan para esa petición. Los controladores pueden por tanto asumir las
 precondiciones de la cadena
-([Estilo de código](../normas/estilo-codigo.md#cs-11-controladores)).
+([BS-07](../normas/construir-servicios.md#bs-07-controladores)).
 
 El patrón se rompe cuando un controlador repite o reordena las comprobaciones:
 
@@ -358,11 +358,12 @@ subclase añade búsquedas para un tipo de registro:
 export abstract class RecordsHandler<T extends BaseRecord> {
   protected constructor(
     protected readonly crud: ICrud<T>,
+    protected readonly executionCtx: IExecutionCtxProvider,
     private readonly handlerName: T['handlerName']
   ) {}
 
   read(recordId: string): Promise<T | null> {
-    const { tenantId } = getExecutionCtx().authenticated;
+    const { tenantId } = this.executionCtx.get().authenticated;
 
     return this.crud.read({ recordId, tenantId } as Partial<T>);
   }
@@ -370,12 +371,12 @@ export abstract class RecordsHandler<T extends BaseRecord> {
 
 // services/auth/src/storage/users/user-records-handler.ts
 export class UserRecordsHandler extends RecordsHandler<UserRecord> {
-  constructor(crud: ICrud<UserRecord>) {
-    super(crud, 'users');
+  constructor(crud: ICrud<UserRecord>, executionCtx: IExecutionCtxProvider) {
+    super(crud, executionCtx, 'users');
   }
 
   readByUsername(username: string): Promise<UserRecord | null> {
-    const { tenantId } = getExecutionCtx().authenticated;
+    const { tenantId } = this.executionCtx.get().authenticated;
 
     return this.crud.read({ username, tenantId });
   }
@@ -409,8 +410,11 @@ construye un tema, y el orden es explícito:
 ```typescript
 // services/auth/src/runtime/runtime.ts
 export async function createRuntime(config: ServiceConfig): Promise<ServiceRuntime> {
+  const executionCtx: IExecutionCtxProvider = new ExecutionCtxProvider(
+    new AsyncLocalStorage<ExecutionContext>()
+  );
   const { dbProvider, userRecordsHandler, sessionRecordsHandler }: StorageComposition =
-    await bootstrapDatabase(config);
+    await bootstrapDatabase(config, executionCtx);
 
   try {
     const signingKeys: ISigningKeyProvider = await bootstrapSigningKeys(config);
@@ -421,7 +425,11 @@ export async function createRuntime(config: ServiceConfig): Promise<ServiceRunti
       signingKeys
     });
 
-    await ensureBootstrapAdmin(config, { userRecordsHandler, users: services.users });
+    await ensureBootstrapAdmin(config, {
+      userRecordsHandler,
+      users: services.users,
+      executionCtx
+    });
     // ... buildApi(...) y return { start, shutdown }
   } catch (error: unknown) {
     await dbProvider.close();
@@ -439,7 +447,7 @@ El patrón se rompe cuando el código de política construye sus propios colabor
 ```typescript
 // Evitar: el servicio oculta una dependencia concreta y su configuración.
 export class SessionsService {
-  private readonly tokens: ITokenService = new TokensService(loadConfig().auth, /* ... */);
+  private readonly tokens: ITokensService = new TokensService(loadConfig().auth, /* ... */);
 }
 ```
 
@@ -451,33 +459,42 @@ Principios relacionados: **DIP** e inyección de dependencias, según se disting
 Un Ambient Context hace que los datos con alcance de petición estén disponibles para
 cualquier código que se ejecute dentro de esa petición, sin pasarlos por cada llamada.
 
-`core` enlaza un `ExecutionContext` (tenant, actor, id de petición) al alcance asíncrono con
-el `AsyncLocalStorage` de Node. El transporte lo enlaza una vez por petición;
-`RecordsHandler` lo lee en cada operación:
+Un `ExecutionContext` (tenant, actor, id de petición) se enlaza al alcance asíncrono a través
+del contrato `IExecutionCtxProvider`. `core` entrega `ExecutionCtxProvider`, que envuelve un
+`AsyncLocalStorage` de Node, pero no mantiene instancia propia: la raíz de composición de cada
+servicio crea el almacenamiento y el proveedor una vez por proceso e inyecta el proveedor en
+los hooks de transporte, los manejadores de registros y las tareas de arranque. El transporte
+enlaza el contexto una vez por petición; `RecordsHandler` lo lee en cada operación:
 
 ```typescript
-// core/src/utils/context.ts
-const executionContextStorage: AsyncLocalStorage<ExecutionContext> =
-  new AsyncLocalStorage<ExecutionContext>();
+// core/src/runtime/execution-ctx-provider.ts
+export class ExecutionCtxProvider implements IExecutionCtxProvider {
+  constructor(private readonly storage: AsyncLocalStorage<ExecutionContext>) {}
 
-export function runWithExecutionCtx<T>(context: ExecutionContext, callback: () => T): T {
-  return executionContextStorage.run(context, callback);
-}
-
-export function getExecutionCtx(): ExecutionContext {
-  const context: ExecutionContext | undefined = executionContextStorage.getStore();
-
-  if (!context) {
-    throw new CustomError({
-      name: 'RESOURCE_NOT_FOUND',
-      message: 'Execution context is not available'
-    });
+  run<T>(context: ExecutionContext, callback: () => T): T {
+    return this.storage.run(context, callback);
   }
 
-  return context;
+  get(): ExecutionContext {
+    const context: ExecutionContext | undefined = this.storage.getStore();
+
+    if (!context) {
+      throw new CustomError({
+        name: 'EXECUTION_CONTEXT_ERROR',
+        message: 'Execution context is not available'
+      });
+    }
+
+    return context;
+  }
 }
 
-// services/auth/src/api/plugins/execution-context.ts
+// services/auth/src/runtime/runtime.ts
+const executionCtx: IExecutionCtxProvider = new ExecutionCtxProvider(
+  new AsyncLocalStorage<ExecutionContext>()
+);
+
+// http/src/plugins/execution-context.ts
 const executionContext: ExecutionContext = {
   authenticated: {
     actorId: request.sessionGrant.actorId,
@@ -486,24 +503,41 @@ const executionContext: ExecutionContext = {
   request: { requestId: request.id }
 };
 
-runWithExecutionCtx(executionContext, done);
+options.executionCtx.run(executionContext, done);
 ```
 
 El beneficio es el aislamiento estructural de tenant: ningún quien llama puede pasar el
 tenant equivocado, porque ninguno pasa un tenant en absoluto.
 
-El coste es una dependencia oculta. Seemann y van Deursen listan el Ambient Context entre
-los antipatrones de inyección de dependencias por esa razón. La plataforma limita el coste de
-tres maneras: el contexto contiene datos, no servicios; solo lo establecen los hooks de
-transporte y el paso de arranque; y leerlo fuera de un alcance enlazado falla ruidosamente
-en lugar de devolver un valor por defecto.
+El coste clásico del patrón es una dependencia oculta: Seemann y van Deursen listan el
+Ambient Context entre los antipatrones de inyección de dependencias porque los consumidores
+alcanzan un punto de acceso global. La plataforma mantiene los datos ambientales pero no el
+punto de acceso: cada consumidor declara el proveedor como parámetro de constructor u opción
+de plugin, de modo que la dependencia es visible y reemplazable, y un proceso posee
+exactamente un almacenamiento, de modo que ninguna copia duplicada de `core` puede dividirlo.
+El coste restante es que los datos todavía fluyen de forma implícita, y la plataforma lo
+limita de tres maneras: el contexto contiene datos, no servicios; solo lo enlazan los hooks
+de transporte y las tareas de arranque; y leerlo fuera de un alcance enlazado falla
+ruidosamente con `EXECUTION_CONTEXT_ERROR`, que el límite de errores mapea a un 500, en lugar
+de devolver un valor por defecto.
 
-El patrón se rompe cuando el contexto se usa para transportar servicios o se establece desde
-lo profundo del código de política:
+El contrato lleva un comportamiento que sus firmas no pueden expresar, así que una
+implementación de reemplazo también debe garantizarlo (véase
+[SP-03](./principios-solid.md#sp-03-principio-de-sustitución-de-liskov-lsp)): el contexto se
+propaga a cada continuación asíncrona iniciada dentro de `run`, los alcances concurrentes
+nunca ven el contexto del otro, un `run` interno ensombrece al externo, y `get` fuera de
+cualquier alcance lanza. Una variable mutable compartida de "contexto actual" pasa la
+verificación de tipos pero filtra tenants entre peticiones concurrentes.
+
+El patrón se rompe cuando el contexto se usa para transportar servicios, se enlaza desde lo
+profundo del código de política, o se alcanza a través de una instancia a nivel de módulo:
 
 ```typescript
 // Evitar: un localizador de servicios disfrazado, y un contexto establecido lejos del transporte.
-runWithExecutionCtx({ ...context, users: new UsersService(/* ... */) }, next);
+executionCtx.run({ ...context, users: new UsersService(/* ... */) }, next);
+
+// Evitar: un almacenamiento propiedad de un paquete compartido, alcanzable desde cualquier parte del proceso.
+export const executionContextStorage = new AsyncLocalStorage<ExecutionContext>();
 ```
 
 ### DP-10 Single Flight
@@ -534,7 +568,7 @@ export function singleFlight<T>(operation: () => Promise<T>): () => Promise<T> {
   };
 }
 
-// services/auth/src/infra/keys/openbao/provider.ts
+// core/src/keys/openbao/openbao-keys-provider.ts
 private readonly synchronize = singleFlight(() => this.refreshSnapshot());
 ```
 
@@ -570,10 +604,11 @@ Los patrones tienen costes. Cada uno añade indirección, y un patrón aplicado 
 que lo justifique hace que el código simple sea más difícil de seguir. Dos contrapartidas en
 el código actual se aceptan a propósito:
 
-- Las factorías parametrizadas (`createSigningKeyProvider`, `DatabaseProvider`,
+- Las factorías parametrizadas (`createKeysProvider`, `DatabaseProvider`,
   `DatabaseAdapter`) deben editarse por cada variante nueva. La comprobación de
   exhaustividad `never` hace que esa edición sea imposible de olvidar.
-- El Ambient Context oculta una dependencia, como se describe en su sección.
+- El Ambient Context pasa los datos de petición de forma implícita a través del alcance
+  asíncrono, como se describe en su sección.
 
 Patrones que la plataforma no usa, y por qué:
 
@@ -613,4 +648,3 @@ la decisión aquí cuando lo haga.
 - Refactoring Guru.
   [Design Patterns catalog](https://refactoring.guru/design-patterns/catalog).
 - Proyecto Go. [singleflight](https://pkg.go.dev/golang.org/x/sync/singleflight).
-</content>

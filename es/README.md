@@ -1,6 +1,6 @@
 ---
 title: Documentación de Salamandra Devs
-lastUpdate: 2026-10-25
+lastUpdate: 2026-11-18
 lang: es
 category: guia
 status: active
@@ -16,7 +16,9 @@ Este repositorio está abierto a las contribuciones de miembros y colaboradores.
 estos documentos, detecta una carencia o quiere documentar algo nuevo, está invitado a
 participar.
 
-**Otros idiomas:** [English index](../en/README.md)
+**Otros idiomas:** [English index](../en/README.md). Algunas traducciones al español van
+por detrás de los documentos en inglés; vea
+[Traducciones pendientes](../lang-mappings.md#pending-translations).
 
 ## Tabla de contenidos
 
@@ -46,9 +48,9 @@ Salamandra Devs.
   estructurales, de comportamiento y de arquitectura de aplicación que el código de
   Salamandra Devs usa hoy (DP-01 a DP-10), agrupados por categoría con el problema que
   resuelve cada uno.
-- [Buenas prácticas de desarrollo](./arquitectura/buenas-practicas-desarrollo.md): guía
-  general sobre modularidad, encapsulamiento y diseño de sistemas mantenibles, con ejemplos
-  prácticos.
+- [Buenas prácticas de desarrollo](./arquitectura/buenas-practicas-desarrollo.md): las
+  prácticas de build, configuración, runtime y entrega (GP-01 a GP-25) que mantienen los
+  paquetes y servicios reproducibles, desplegables, observables y seguros por defecto.
 
 ### Normas
 
@@ -56,14 +58,21 @@ Convenciones de toda la plataforma para código, documentación y comentarios de
 de código fuente.
 
 - [Estilo de código](./normas/estilo-codigo.md): estilo de código TypeScript y general;
-  imports, esquemas Zod, wrappers, errores, módulos, líneas en blanco y hooks de rutas
-  de las APIs RESTful.
+  imports, esquemas Zod, wrappers, errores, módulos, líneas en blanco y nombres de
+  operaciones delegadas.
 - [Guía de estilo de documentos](./normas/guia-estilo-documentos.md): estilo Markdown,
   redacción, frontmatter, valores de estado y comentarios de código fuente para TypeDoc,
   con ejemplos trabajados.
 - [Convenciones de nombres](./normas/convenciones-nombres.md): el único estándar de
   nombres para servicios, rutas, registros y símbolos, con las reglas de abreviatura y el
   esquema de IDs de documento.
+- [Construir planes](./normas/construir-planes.md): secciones obligatorias, citación de las
+  reglas de arquitectura y de la casa, y la revisión de cumplimiento para los planes bajo
+  `docs/plans/`.
+- [Construir servicios](./normas/construir-servicios.md): cómo los servicios Fastify aplican
+  las buenas prácticas; seguridad de transporte y niveles de límite de tasa, liveness y
+  readiness, correlación de peticiones, respuestas de problema RFC 9457 y composición de
+  hooks de ruta (BS-01 a BS-08).
 
 ### Roadmap
 
@@ -73,8 +82,12 @@ Estado de las funcionalidades por paquete, registrado en línea con etiquetas de
   `core/`.
 - [Roadmap de la librería Tools](./roadmap/TOOLS-ROADMAP.md): estado de las funcionalidades
   de `tools/`.
+- [Roadmap de la librería HTTP](./roadmap/HTTP-ROADMAP.md): estado de las funcionalidades de
+  `http/`.
 - [Roadmap del servicio Auth](./roadmap/AUTH-ROADMAP.md): estado de las funcionalidades de
   `services/auth/`.
+- [Roadmap del servicio Gateway](./roadmap/GATEWAY-ROADMAP.md): estado de las
+  funcionalidades de `services/gateway/`.
 
 ## Cómo usar este repositorio
 
@@ -182,5 +195,3 @@ alinear el alcance y evitar esfuerzo duplicado.
 
 Gracias por ayudar a Salamandra Devs a construir documentación en la que la comunidad pueda
 confiar y mejorar en conjunto.
-</content>
-</invoke>

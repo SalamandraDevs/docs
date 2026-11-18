@@ -1,6 +1,6 @@
 ---
 title: Design Patterns
-lastUpdate: 2026-10-30
+lastUpdate: 2026-11-14
 lang: en
 category: architecture
 status: published
@@ -345,11 +345,12 @@ lookups for one record type:
 export abstract class RecordsHandler<T extends BaseRecord> {
   protected constructor(
     protected readonly crud: ICrud<T>,
+    protected readonly executionCtx: IExecutionCtxProvider,
     private readonly handlerName: T['handlerName']
   ) {}
 
   read(recordId: string): Promise<T | null> {
-    const { tenantId } = getExecutionCtx().authenticated;
+    const { tenantId } = this.executionCtx.get().authenticated;
 
     return this.crud.read({ recordId, tenantId } as Partial<T>);
   }
@@ -357,12 +358,12 @@ export abstract class RecordsHandler<T extends BaseRecord> {
 
 // services/auth/src/storage/users/user-records-handler.ts
 export class UserRecordsHandler extends RecordsHandler<UserRecord> {
-  constructor(crud: ICrud<UserRecord>) {
-    super(crud, 'users');
+  constructor(crud: ICrud<UserRecord>, executionCtx: IExecutionCtxProvider) {
+    super(crud, executionCtx, 'users');
   }
 
   readByUsername(username: string): Promise<UserRecord | null> {
-    const { tenantId } = getExecutionCtx().authenticated;
+    const { tenantId } = this.executionCtx.get().authenticated;
 
     return this.crud.read({ username, tenantId });
   }
@@ -395,8 +396,11 @@ topic, and the order is explicit:
 ```typescript
 // services/auth/src/runtime/runtime.ts
 export async function createRuntime(config: ServiceConfig): Promise<ServiceRuntime> {
+  const executionCtx: IExecutionCtxProvider = new ExecutionCtxProvider(
+    new AsyncLocalStorage<ExecutionContext>()
+  );
   const { dbProvider, userRecordsHandler, sessionRecordsHandler }: StorageComposition =
-    await bootstrapDatabase(config);
+    await bootstrapDatabase(config, executionCtx);
 
   try {
     const signingKeys: ISigningKeyProvider = await bootstrapSigningKeys(config);
@@ -407,7 +411,11 @@ export async function createRuntime(config: ServiceConfig): Promise<ServiceRunti
       signingKeys
     });
 
-    await ensureBootstrapAdmin(config, { userRecordsHandler, users: services.users });
+    await ensureBootstrapAdmin(config, {
+      userRecordsHandler,
+      users: services.users,
+      executionCtx
+    });
     // ... buildApi(...) and return { start, shutdown }
   } catch (error: unknown) {
     await dbProvider.close();
@@ -437,31 +445,40 @@ Related principles: **DIP** and dependency injection, as distinguished in
 An Ambient Context makes request-scoped data available to any code running within that
 request, without passing it through every call.
 
-`core` binds an `ExecutionContext` (tenant, actor, request id) to the async scope with
-Node's `AsyncLocalStorage`. Transport binds it once per request; `RecordsHandler` reads it
-on every operation:
+An `ExecutionContext` (tenant, actor, request id) is bound to the async scope through the
+`IExecutionCtxProvider` contract. `core` ships `ExecutionCtxProvider`, which wraps a Node
+`AsyncLocalStorage`, but holds no instance of its own: each service's composition root
+creates the storage and the provider once per process and injects the provider into
+transport hooks, records handlers, and startup tasks. Transport binds the context once per
+request; `RecordsHandler` reads it on every operation:
 
 ```typescript
-// core/src/runtime/context.ts
-const executionContextStorage: AsyncLocalStorage<ExecutionContext> =
-  new AsyncLocalStorage<ExecutionContext>();
+// core/src/runtime/execution-ctx-provider.ts
+export class ExecutionCtxProvider implements IExecutionCtxProvider {
+  constructor(private readonly storage: AsyncLocalStorage<ExecutionContext>) {}
 
-export function runWithExecutionCtx<T>(context: ExecutionContext, callback: () => T): T {
-  return executionContextStorage.run(context, callback);
-}
-
-export function getExecutionCtx(): ExecutionContext {
-  const context: ExecutionContext | undefined = executionContextStorage.getStore();
-
-  if (!context) {
-    throw new CustomError({
-      name: 'RESOURCE_NOT_FOUND',
-      message: 'Execution context is not available'
-    });
+  run<T>(context: ExecutionContext, callback: () => T): T {
+    return this.storage.run(context, callback);
   }
 
-  return context;
+  get(): ExecutionContext {
+    const context: ExecutionContext | undefined = this.storage.getStore();
+
+    if (!context) {
+      throw new CustomError({
+        name: 'EXECUTION_CONTEXT_ERROR',
+        message: 'Execution context is not available'
+      });
+    }
+
+    return context;
+  }
 }
+
+// services/auth/src/runtime/runtime.ts
+const executionCtx: IExecutionCtxProvider = new ExecutionCtxProvider(
+  new AsyncLocalStorage<ExecutionContext>()
+);
 
 // http/src/plugins/execution-context.ts
 const executionContext: ExecutionContext = {
@@ -472,24 +489,40 @@ const executionContext: ExecutionContext = {
   request: { requestId: request.id }
 };
 
-runWithExecutionCtx(executionContext, done);
+options.executionCtx.run(executionContext, done);
 ```
 
 The benefit is structural tenant isolation: no caller can pass the wrong tenant, because
 no caller passes a tenant at all.
 
-The cost is a hidden dependency. Seemann and van Deursen list Ambient Context among the
-dependency injection anti-patterns for that reason. The platform limits the cost in three
-ways: the context holds data, not services; it is set only by transport hooks and the
-bootstrap step; and reading it outside a bound scope fails loudly instead of returning a
-default.
+The classic cost of the pattern is a hidden dependency: Seemann and van Deursen list
+Ambient Context among the dependency injection anti-patterns because consumers reach a
+global access point. The platform keeps the data ambient but not the access point: every
+consumer declares the provider as a constructor parameter or plugin option, so the
+dependency is visible and replaceable, and a process owns exactly one storage, so no
+duplicated copy of `core` can split it. The remaining cost is that the data still flows
+implicitly, and the platform limits it in three ways: the context holds data, not
+services; it is bound only by transport hooks and startup tasks; and reading it outside a
+bound scope fails loudly with `EXECUTION_CONTEXT_ERROR`, which the error boundary maps to
+a 500, instead of returning a default.
 
-The pattern breaks when the context is used to carry services or is set from deep inside
-policy code:
+The contract carries behavior that its signatures cannot express, so a replacement
+implementation must also guarantee it (see
+[SP-03](./solid-principles.md#sp-03-liskov-substitution-principle-lsp)): the context
+propagates to every async continuation started inside `run`, concurrent scopes never see
+each other's context, an inner `run` shadows the outer one, and `get` outside any scope
+throws. A shared mutable "current context" variable type-checks but leaks tenants across
+concurrent requests.
+
+The pattern breaks when the context is used to carry services, is bound from deep inside
+policy code, or is reached through a module-level instance:
 
 ```typescript
 // Avoid: a service locator in disguise, and a context set far from transport.
-runWithExecutionCtx({ ...context, users: new UsersService(/* ... */) }, next);
+executionCtx.run({ ...context, users: new UsersService(/* ... */) }, next);
+
+// Avoid: a storage owned by a shared package, reachable from anywhere in the process.
+export const executionContextStorage = new AsyncLocalStorage<ExecutionContext>();
 ```
 
 ### DP-10 Single Flight
@@ -557,7 +590,8 @@ accepted on purpose:
 - The parameterized factories (`createKeysProvider`, `DatabaseProvider`,
   `DatabaseAdapter`) must be edited for each new variant. The exhaustiveness `never` check
   makes that edit impossible to forget.
-- Ambient Context hides a dependency, as described in its section.
+- Ambient Context passes request data implicitly through the async scope, as described in
+  its section.
 
 Patterns the platform does not use yet, and why (each can be adopted when suitable):
 

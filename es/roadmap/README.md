@@ -1,6 +1,6 @@
 ---
 title: Reglas del roadmap
-lastUpdate: 2026-10-25
+lastUpdate: 2026-11-18
 lang: es
 category: planificacion
 status: active
@@ -9,7 +9,7 @@ status: active
 # Reglas del roadmap
 
 Estas reglas aplican a todos los archivos `{REPO}-ROADMAP.md` de este directorio (`AUTH`,
-`CORE`, `TOOLS`).
+`CORE`, `GATEWAY`, `HTTP`, `TOOLS`).
 
 ## Formato de línea
 
@@ -24,7 +24,7 @@ Ejemplo:
 
 ```markdown
 - [implementado] AUTH-004 Sesiones: emite, lee, termina y refresca con tokens de refresco
-  opacos y rotativos almacenados como hashes HMAC. (refs: `docs/session-plan.md`,
+  opacos y rotativos almacenados como hashes HMAC. (refs: `docs/plans/session-plan.md`,
   `src/application/sessions-service/`)
 ```
 
@@ -48,10 +48,11 @@ los documentos de planificación; no son valores de `status` del frontmatter.
 
 ## Alcance y rutas
 
-- Alcance: `core/`, `tools/` y `services/auth/`, cada uno con su propio archivo de roadmap
-  en este directorio.
-- Las rutas son relativas a la raíz de cada repositorio. Las rutas de ruta HTTP son
-  relativas a la raíz del servicio auth, antes de cualquier prefijo de gateway.
+- Alcance: `core/`, `tools/`, `http/`, `services/auth/` y `services/gateway/`, cada uno
+  con su propio archivo de roadmap en este directorio.
+- Las rutas son relativas a la raíz de cada repositorio. Las rutas HTTP de auth son
+  relativas a la raíz del servicio auth, antes de cualquier prefijo de gateway; las rutas
+  HTTP de gateway incluyen el prefijo del servicio tal como se sirve (`/gateway/v1/...`).
 
 ## Reglas de edición
 
@@ -60,4 +61,3 @@ los documentos de planificación; no son valores de `status` del frontmatter.
   del repositorio.
 - Al sincronizar el estado de las funcionalidades implementadas, actualice `lastUpdate` en
   cada archivo de roadmap que modifique para reflejar la instantánea actual.
-</content>

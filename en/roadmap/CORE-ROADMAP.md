@@ -1,6 +1,6 @@
 ---
 title: Core Library Roadmap
-lastUpdate: 2026-11-11
+lastUpdate: 2026-11-18
 lang: en
 category: planning
 status: active
@@ -9,7 +9,7 @@ status: active
 # Core Library Roadmap
 
 Feature status for `core/` (`@salamandradevs/core`). Paths in `refs` are relative to
-`core/`.
+`core/`; plan documents under `docs/plans/` are relative to the workspace root.
 
 ## CORE features
 
@@ -17,18 +17,20 @@ Shared record and database foundation: backend-neutral contracts, adapters, tena
 record handling, and request execution context.
 
 - [implemented] CORE-001 Database contracts: connection lifecycle, CRUD, and dataset
-  contracts. (refs: `src/database/contracts.ts`)
+  contracts. (refs: `src/infra/database/contracts.ts`)
 - [implemented] CORE-002 MongoDB adapter: connection, CRUD, dataset provisioning.
-  (refs: `src/database/mongo/`)
+  (refs: `src/infra/database/mongo/`)
 - [implemented] CORE-003 MySQL adapter: connection, CRUD, dataset provisioning.
-  (refs: `src/database/mysql/`)
+  (refs: `src/infra/database/mysql/`)
 - [implemented] CORE-004 Dataset provisioner: creates datasets and indexes from Zod-based
-  definitions. (refs: `src/database/dataset-provisioner.ts`)
+  definitions. (refs: `src/infra/database/dataset-provisioner.ts`)
 - [implemented] CORE-005 `RecordsHandler`: tenant scope, `recordId`, audit metadata, and
   deterministic cursor pagination ordered by `createdAt` then `recordId`, both descending.
-  (refs: `src/records/records-handler.ts`)
-- [implemented] CORE-006 Execution context: AsyncLocalStorage carrying actor, tenant, and
-  request id. (refs: `src/runtime/context.ts`)
+  (refs: `src/storage/records-handler.ts`)
+- [implemented] CORE-006 Execution context: the `IExecutionCtxProvider` contract and the
+  `ExecutionCtxProvider` implementation over a service-owned `AsyncLocalStorage`, carrying
+  actor, tenant, and request id; injected into `RecordsHandler`, with no module-level
+  instance. (refs: `src/runtime/`)
 - [implemented] CORE-008 Database provider and backend-bound adapters: `DatabaseProvider`
   (`IDatabaseProvider`) owns backend selection and connection lifecycle, exposing a
   discriminated `DatabaseHandle`, and `DatabaseAdapter` selects the backend once to

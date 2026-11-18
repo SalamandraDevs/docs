@@ -436,4 +436,3 @@ lugar de solo anticipar un futuro hipotético.
   Examples](https://www.geeksforgeeks.org/system-design/solid-principle-in-programming-understand-with-real-life-examples/).
 - Álvarez Caules, Cecilio Manuel. [*Arquitectura Java Sólida y
   Patrones*](https://www.buscalibre.es/libro-arquitectura-java-solida-y-patrones/9798322883159/p/60072104).
-</content>

@@ -1,6 +1,6 @@
 ---
 title: Buenas prácticas de desarrollo
-lastUpdate: 2026-10-25
+lastUpdate: 2026-11-18
 lang: es
 category: arquitectura
 status: published
@@ -12,12 +12,19 @@ Una **buena práctica** es una regla de ingeniería que previene una clase conoc
 builds que no pueden reproducirse, secretos que se filtran, procesos que pierden estado o
 incidentes que nadie puede rastrear. Esta guía cubre las prácticas que mantienen los
 paquetes y servicios de Salamandra Devs modulares, reproducibles, desplegables, observables
-y seguros. Aplican a `core/`, `tools/` y a todos los servicios bajo `services/`.
+y seguros por defecto. Aplican a `core/`, `tools/` y a todos los servicios bajo `services/`.
 
 Cada práctica lleva un ID estable (`GP-NN`) para su citación; los IDs siguen
-[IDs de documento](../normas/convenciones-nombres.md#ids-de-documento). Dónde el código
-aún no cumple una práctica se registra en la
-[Revisión de Arquitectura](../../architecture-review.md), no en esta guía.
+[IDs de documento](../normas/convenciones-nombres.md#ids-de-documento). Dónde el código aún
+no cumple una práctica se registra en la
+[Revisión de Arquitectura](../../architecture-review.md), no en esta guía. Cómo los
+servicios Fastify aplican estas prácticas (seguridad de transporte, endpoints de salud,
+correlación de peticiones, respuestas de problema) vive en la guía de la casa
+[Construir servicios](../normas/construir-servicios.md) (`BS`).
+
+IDs retirados, nunca reutilizados: GP-06 fusionado en GP-05, GP-11 en GP-03 y GP-22 en
+GP-25; las reglas de servicio de GP-16, GP-19 y GP-23 se trasladaron a BS-02, BS-03 y BS-01,
+y las prácticas que las respaldan son parte de GP-15, GP-18 y GP-25.
 
 ## Terminología usada en esta guía
 
@@ -64,9 +71,7 @@ Los tipos siguen la convención de [Semantic Commit Messages][scm]; `fix`, `feat
 Los ejemplos son extractos recortados de `core/`, `tools/` y `services/auth/`, incluyendo
 sus `package.json`, Dockerfile, configuración y archivos de workflow. Cada uno comienza con
 un comentario que nombra su archivo fuente. Los contraejemplos se marcan con `Evitar` y son
-hipotéticos: muestran lo que rompería la práctica, no código que exista. Donde el código
-real sí rompe una práctica, el caso se lista en la
-[Revisión de Arquitectura](../../architecture-review.md) en su lugar.
+hipotéticos: muestran lo que rompería la práctica, no código que exista.
 
 Cada sección termina con una línea **Comprobación:**, una condición que quien revisa o un
 agente puede verificar en el repositorio.
@@ -123,15 +128,31 @@ Relacionado: GP-03;
 **Comprobación:** los archivos bajo `src/api/` no importan ningún módulo de `#storage/` ni
 `#infra/`.
 
-### GP-03 Contratos en los límites, cableado en la raíz de composición
+### GP-03 Contratos, cableado en la raíz de composición y backends configurados
 
-El código que cruza un límite depende de un contrato, y las clases concretas se crean solo
-en la raíz de composición o en una factoría que esta llama. Construir colaboradores dentro
-del código de política oculta dependencias y bloquea la sustitución y las pruebas.
+Una clase que se consume a través de un límite se consume mediante un contrato, aunque tenga
+una sola implementación, y las clases concretas se crean solo en la raíz de composición o en
+una factoría que esta llama. Un límite es una costura entre las secciones de
+[GP-02](#gp-02-estructura-de-servicio-en-capas) (transporte, aplicación, almacenamiento,
+adaptadores externos), entre dos módulos de casos de uso, o entre un servicio y un paquete
+compartido. Quien consume depende solo de lo que llama, y la raíz de composición decide qué
+recibe, así que la clase detrás del contrato puede reemplazarse por una segunda
+implementación o por un fake de prueba sin tocar a quien consume. Construir colaboradores
+dentro del código de política oculta dependencias y bloquea ambas cosas. Los servicios de
+respaldo (bases de datos, almacenes de claves, proveedores de identidad) también se localizan
+por configuración, de modo que reemplazar o reubicar uno es un cambio de configuración, no
+una release de código.
+
+- **Necesita un contrato**: el transporte que consume un caso de uso (`ISessionsService` en
+  `api/types.ts`), un caso de uso que consume otro (`ITokensService` en `SessionsService`), y
+  cualquier consumidor de un adaptador (`ISigningKeyProvider`, `IOAuthProvider`).
+- **No lo necesita**: las clases usadas solo dentro de su propio módulo o solo en `runtime/`
+  (`DatabaseProvider`, `DatabaseAdapter`), y los manejadores de registros, cuyo punto de
+  sustitución es el `ICrud` que tienen debajo ([DP-03](./patrones-diseno.md#dp-03-bridge)).
 
 ```typescript
 // services/auth/src/runtime/services.ts
-const tokens: ITokenService = new TokensService(config.auth, deps.signingKeys);
+const tokens: ITokensService = new TokensService(config.auth, deps.signingKeys);
 const sessions: ISessionsService = new SessionsService(
   deps.sessionRecordsHandler,
   tokens,
@@ -143,15 +164,22 @@ const sessions: ISessionsService = new SessionsService(
 ```typescript
 // Evitar: el servicio construye su propia dependencia y su configuración.
 export class SessionsService {
-  private readonly tokens: ITokenService = new TokensService(loadConfig().auth, /* ... */);
+  private readonly tokens: ITokensService = new TokensService(loadConfig().auth, /* ... */);
 }
+
+// Evitar: un backend y su ubicación fijados en código.
+const client: MongoClient = new MongoClient('mongodb://mongo:27017');
 ```
 
-Relacionado: [DP-08](./patrones-diseno.md#dp-08-composition-root),
+Relacionado: GP-09; [DP-01](./patrones-diseno.md#dp-01-factory),
+[DP-08](./patrones-diseno.md#dp-08-composition-root),
 [SP-05](./principios-solid.md#sp-05-principio-de-inversión-de-dependencias-dip).
 
 **Comprobación:** un `new` de una clase de infraestructura (`MongoCrud`, `DatabaseProvider`,
-un proveedor) aparece solo bajo `runtime/`, `infra/*/factory.ts` o `core/src/infra/`.
+un proveedor) aparece solo bajo `runtime/`, `infra/*/factory.ts` o `core/src/infra/`; ningún
+tipo bajo `src/api/` ni en el constructor de un caso de uso nombra una clase concreta de
+aplicación o de adaptador; cambiar o reubicar un servicio de respaldo cambia solo la
+configuración.
 
 ### GP-04 Esquemas como única fuente de verdad
 
@@ -181,53 +209,31 @@ Relacionado: [CS-02](../normas/estilo-codigo.md#cs-02-esquemas-zod-y-tipos-deriv
 
 **Comprobación:** un tipo que refleja los campos de un esquema se declara con `z.infer`.
 
-### GP-05 Dependencias declaradas y bloqueadas
+### GP-05 Dependencias bloqueadas y toolchain fijado
 
-Cada dependencia se declara en `package.json`, el lockfile se versiona en git, y la CI y los
-builds de imagen instalan con un lockfile congelado. Sin un árbol bloqueado, dos builds del
-mismo commit pueden resolver dependencias distintas.
+Cada dependencia se declara y se bloquea, y las instalaciones usan el lockfile congelado;
+pnpm y la versión mayor de Node están fijados por igual en desarrollo, CI e imágenes, o dos
+builds de un mismo commit pueden diferir.
 
 ```dockerfile
 # services/auth/Dockerfile
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+FROM node:22-alpine
+RUN corepack enable && corepack prepare pnpm@12.4.1 --activate
 RUN pnpm install --frozen-lockfile
 ```
 
 ```yaml
-# Evitar: resuelve un árbol nuevo en cada release.
+# Evitar: una instalación sin bloqueo y un runtime distinto del de la imagen.
 - run: pnpm install --no-frozen-lockfile
-```
-
-Relacionado: GP-06, GP-12.
-
-**Comprobación:** `pnpm-lock.yaml` está versionado en git y cada paso de instalación en CI y
-en los Dockerfiles usa `--frozen-lockfile`.
-
-### GP-06 Toolchain fijado
-
-El gestor de paquetes y la versión mayor de Node.js están fijados y coinciden entre el
-desarrollo local, la CI y las imágenes de contenedor. Un build que pasa en un runtime y
-falla en otro no es reproducible.
-
-```dockerfile
-# services/auth/Dockerfile
-FROM node:22-alpine AS base
-RUN corepack enable && corepack prepare pnpm@12.4.1 --activate
-```
-
-```yaml
-# Evitar: una herramienta no fijada y un runtime distinto del de la imagen.
-- run: npm install -g npm@latest
 - uses: actions/setup-node@v4
-  with:
-    node-version: '24'
+  with: { node-version: '24' }
 ```
 
-Relacionado: GP-05, GP-21.
+Relacionado: GP-12, GP-21.
 
-**Comprobación:** la versión mayor de Node.js en cada `node-version` de workflow, cada línea
-`FROM node:` y `engines` coinciden; las herramientas instaladas en CI llevan una versión
-explícita.
+**Comprobación:** `pnpm-lock.yaml` está versionado y las instalaciones usan
+`--frozen-lockfile`; `node-version`, `FROM node:` y `engines` coinciden; las herramientas de
+CI llevan versiones explícitas.
 
 ### GP-07 Salvaguardas de la cadena de suministro
 
@@ -296,11 +302,15 @@ antes de usarse.
 ### GP-09 Secretos y credenciales solo desde el entorno
 
 Los secretos y las credenciales (tokens, contraseñas, secretos de cliente, cadenas de
-conexión con credenciales) se resuelven desde el entorno en el código que los usa. El
-archivo de configuración lleva solo un marcador de posición `READ FROM ENV ...`, y el valor
-resuelto nunca se vuelve a almacenar en el objeto de configuración. Los archivos de
-configuración se versionan en git, se copian en imágenes y se decoran en las peticiones; un
-secreto ahí se filtra por las tres vías.
+conexión con credenciales) se resuelven desde el entorno en el código que los usa. El archivo
+de configuración lleva solo un marcador de posición `READ FROM ENV ...`, y el valor resuelto
+nunca se vuelve a almacenar en el objeto de configuración. Los archivos de configuración se
+versionan en git, se copian en imágenes y se decoran en las peticiones; un secreto ahí se
+filtra por las tres vías.
+
+El archivo se valida (GP-08) antes de resolver los valores del entorno, así que un marcador
+de posición debe pasar el formato de su campo: un `baoAddr` validado por `z.url()` usa
+`http://READ-FROM-ENV-BAO_ADDR`, no `READ FROM ENV BAO_ADDR`.
 
 ```typescript
 // services/auth/src/application/config/schema.ts
@@ -318,11 +328,12 @@ const { hashSecret } = loadEnvVariables(refreshTokenConfigSchema);
 "dbServerUri": "mongodb://auth:s3cret@mongo:27017"
 ```
 
-Relacionado: GP-08, GP-11.
+Relacionado: GP-08, GP-03.
 
 **Comprobación:** ningún archivo de configuración versionado contiene una credencial; cada
-campo de esquema sensible lleva `.meta({ env })`; cada variable declarada aparece en
-`.env.example` y en cada manifiesto de despliegue.
+campo de esquema sensible lleva `.meta({ env })`; cada marcador de posición en un archivo de
+configuración versionado parsea bajo el esquema de su campo; cada variable declarada aparece
+en `.env.example` y en cada manifiesto de despliegue.
 
 ### GP-10 La configuración varía por despliegue, no por build
 
@@ -351,39 +362,11 @@ Relacionado: GP-12, GP-21.
 despliegue que puede nombrar cualquier entorno, y la imagen no necesita contener archivos
 específicos de un entorno.
 
-### GP-11 Los servicios de respaldo son recursos adjuntos detrás de contratos
-
-Las bases de datos, los almacenes de claves y los proveedores de identidad se alcanzan a
-través de un contrato y se localizan por configuración, de modo que uno puede reemplazarse o
-reubicarse sin un cambio de código. Los backends cableados convierten una mudanza de
-infraestructura en una release de código.
-
-```typescript
-// services/auth/src/runtime/database.ts
-const dbProvider: DatabaseProvider = new DatabaseProvider(
-  config.databaseBackend,
-  config.dbServerUri,
-  config.databaseName
-);
-```
-
-```typescript
-// Evitar: un backend y su ubicación fijados en código.
-const client: MongoClient = new MongoClient('mongodb://mongo:27017');
-```
-
-Relacionado: GP-09; [DP-01](./patrones-diseno.md#dp-01-factory),
-[DP-02](./patrones-diseno.md#dp-02-adapter).
-
-**Comprobación:** cambiar un backend cambia solo la configuración; su ubicación y
-credenciales siguen GP-09.
-
 ### GP-12 Artefactos inmutables, desplegados por identidad
 
-Un build produce un artefacto inmutable por commit, un release combina ese artefacto con la
-configuración de despliegue, y los despliegues y rollbacks referencian el artefacto por un
-identificador inmutable (SHA del commit o tag de versión). Con un tag móvil, "qué está
-corriendo" y "cómo hacer rollback" no tienen una respuesta exacta.
+Un build produce un artefacto inmutable por commit, y los despliegues y rollbacks referencian
+el artefacto por un identificador inmutable (SHA del commit o tag de versión). Con un tag
+móvil, "qué está corriendo" y "cómo hacer rollback" no tienen una respuesta exacta.
 
 ```yaml
 # services/auth/.github/workflows/deploy.yml
@@ -402,9 +385,9 @@ Relacionado: GP-05, GP-10.
 
 ### GP-13 Las puertas de calidad se ejecutan en CI
 
-Formato, lint, comprobación de tipos y pruebas se ejecutan en CI en cada cambio y bloquean
-un release cuando fallan. Los hooks locales son una conveniencia, no la puerta: pueden
-saltarse y no se ejecutan sobre el código que realmente se construye.
+Formato, lint, comprobación de tipos y pruebas se ejecutan en CI en cada cambio y bloquean un
+release cuando fallan. Los hooks locales son una conveniencia, no la puerta: pueden saltarse
+y no se ejecutan sobre el código que realmente se construye.
 
 ```json
 // services/auth/package.json
@@ -451,7 +434,7 @@ instancia puede verificar una petición de refresco.
 private readonly pendingStates = new Map<string, OAuthPendingState>();
 ```
 
-Relacionado: GP-11, GP-15.
+Relacionado: GP-03, GP-15.
 
 **Comprobación:** ningún `Map`, arreglo o variable a nivel de módulo de larga vida en un
 servicio retiene estado derivado de la petición.
@@ -459,9 +442,11 @@ servicio retiene estado derivado de la petición.
 ### GP-15 Descartabilidad: arranque rápido, parada ordenada
 
 Un servicio arranca sin pasos manuales, libera cada recurso que abrió ante `SIGTERM`/`SIGINT`
-y libera los recursos ya abiertos cuando el arranque falla a mitad de camino. Los
-orquestadores detienen y mueven procesos de forma rutinaria; un proceso que filtra conexiones
-o se cuelga al parar degrada la plataforma.
+y libera los recursos ya abiertos cuando el arranque falla a mitad de camino. Mientras se
+ejecuta, le dice a su orquestador si está vivo y si puede servir, de modo que el tráfico
+alcance solo una instancia cuyos servicios de respaldo requeridos son alcanzables. Los
+orquestadores arrancan, detienen y mueven procesos de forma rutinaria; un proceso que filtra
+conexiones, se cuelga al parar o acepta tráfico que no puede servir degrada la plataforma.
 
 ```typescript
 // services/auth/src/runtime/runtime.ts
@@ -483,38 +468,12 @@ process.once('SIGTERM', shutdown);
 process.on('SIGTERM', () => process.exit(0));
 ```
 
-Relacionado: GP-14, GP-16.
+Relacionado: GP-14, GP-03;
+[BS-02](../normas/construir-servicios.md#bs-02-liveness-y-readiness).
 
 **Comprobación:** cada recurso abierto en `runtime/` se cierra tanto en la vía de fallo como
-en la vía de apagado.
-
-### GP-16 Liveness y readiness
-
-Un servicio expone una comprobación de liveness (el proceso responde) y una comprobación de
-readiness (sus servicios de respaldo requeridos son alcanzables), y la definición del
-contenedor las usa. Sin readiness, el tráfico alcanza una instancia que no puede servirlo.
-
-```typescript
-// services/auth/src/api/routes/health/controller.ts
-const response: HealthResponse = {
-  service: 'auth',
-  status: 'ok',
-  timestamp: new Date().toISOString()
-};
-```
-
-```yaml
-# Evitar: una definición de contenedor sin comprobación de salud, de modo que una instancia
-# rota permanece en rotación hasta que alguien lo nota.
-services:
-  auth:
-    image: ghcr.io/salamandradevs/auth:<sha>
-```
-
-Relacionado: GP-15, GP-11.
-
-**Comprobación:** existe un endpoint de readiness y el Dockerfile o el archivo compose
-declara un `HEALTHCHECK` o `healthcheck`.
+en la vía de apagado, y cada proceso desplegado declara una comprobación de salud que usa su
+orquestador.
 
 ### GP-17 Las tareas administrativas son idempotentes y propiedad del operador
 
@@ -553,9 +512,12 @@ ejecución.
 ### GP-18 Logs como flujo de eventos
 
 Los servicios escriben logs estructurados a stdout y dejan el enrutamiento y el
-almacenamiento al entorno, con el nivel configurable por despliegue. Los archivos dentro de
-los contenedores se pierden con el contenedor y son invisibles para los recolectores de
-logs.
+almacenamiento al entorno, con el nivel configurable por despliegue. Cada línea de log lleva
+el id de correlación de la unidad de trabajo a la que pertenece (una petición, un job, un
+mensaje); el id se acepta de quien llama cuando está presente y se reenvía en cada llamada a
+otro servicio de la plataforma. Los archivos dentro de los contenedores se pierden con el
+contenedor y son invisibles para los recolectores de logs, y las líneas de log sin id de
+correlación no pueden rastrearse hasta un fallo entre líneas o servicios.
 
 ```typescript
 // services/auth/src/api/api.ts
@@ -572,159 +534,84 @@ const base: FastifyInstance = Fastify({
 ```typescript
 // Evitar: logs escritos a un archivo dentro del contenedor.
 logger: { level: 'info', file: '/app/logs/auth.log' }
-```
 
-Relacionado: GP-19, GP-20.
-
-**Comprobación:** ningún código escribe archivos de log; cada variable de logging la pasa
-cada manifiesto de despliegue.
-
-### GP-19 Correlación de peticiones
-
-Cada petición lleva un id de correlación que se acepta de quien llama cuando está presente,
-se adjunta a cada línea de log y está disponible para el código posterior. Sin él, una
-petición que falla no puede rastrearse entre líneas de log ni servicios.
-
-```typescript
-// services/auth/src/api/plugins/execution-context.ts
-const executionContext: ExecutionContext = {
-  authenticated: { actorId: request.sessionGrant.actorId, /* ... */ },
-  request: { requestId: request.id }
-};
-```
-
-Fastify rellena `request.id` a partir del header `x-request-id` configurado en GP-18.
-
-```typescript
 // Evitar: una llamada a otro servicio de la plataforma que descarta el id de correlación.
 await fetch(`${profilesUrl}/v1/persons/${recordId}`);
 ```
 
-Relacionado: GP-18; [DP-09](./patrones-diseno.md#dp-09-ambient-context).
+Relacionado: GP-20; [DP-09](./patrones-diseno.md#dp-09-ambient-context);
+[BS-03](../normas/construir-servicios.md#bs-03-correlación-de-peticiones).
 
-**Comprobación:** las llamadas salientes a otros servicios de la plataforma reenvían
-`x-request-id`.
+**Comprobación:** ningún código escribe archivos de log; cada variable de logging la pasa
+cada manifiesto de despliegue; las llamadas salientes a otros servicios de la plataforma
+reenvían el id de correlación.
 
 ### GP-20 Errores clasificados
 
 Cada error que el código lanza es un `CustomError` con un `ErrorName` deliberado
-([CS-04](../normas/estilo-codigo.md#cs-04-errores)), y el transporte mapea los nombres a
-respuestas de problema RFC 9457 con URIs de `type` de problema estables. Los errores no
-clasificados llegan a los clientes como 500 genéricos y no pueden alertarse.
+([CS-04](../normas/estilo-codigo.md#cs-04-errores)), y un fallo de proveedor o driver se
+convierte en el adaptador que lo captura, conservando el original como la causa. Cada límite
+que expone errores a un cliente mapea esos nombres a una respuesta estable y documentada. Los
+errores no clasificados llegan a los clientes como fallos genéricos y no pueden alertarse.
 
 ```typescript
-// services/auth/src/api/plugins/errors.ts
-} else if (error.name === 'RESOURCE_NOT_FOUND') {
-  status = 404;
-  type = 'https://api.slmdevs.com/problems/resource-not-found';
-```
+// core/src/infra/database/mongo/mongo-crud.ts
+} catch (error: unknown) {
+  if (isMongoDupKeyError(error)) {
+    throw new CustomError({
+      name: 'DB_DUPLICATE_KEY_ERROR',
+      message: errMessages.DB_DUPLICATE_KEY,
+      cause: error
+    });
+  }
 
-```typescript
-// Evitar: un error no clasificado que el manejador solo puede reportar como 500.
-throw new Error('User not found');
-```
-
-Relacionado: GP-18.
-
-**Comprobación:** ningún `throw new Error` o `throw new TypeError` escapa de una función sin
-envolverse en un `CustomError`; cada URI de `type` de problema usa una única URL base.
-
-### GP-21 Paridad entre desarrollo y producción
-
-El desarrollo usa los mismos tipos de servicios de respaldo y la misma imagen de contenedor
-que producción, y cada diferencia es explícita, nombrada y limitada a adaptadores
-seleccionados por configuración. Un backend usado solo en producción oculta fallos hasta la
-release.
-
-```typescript
-// services/auth/src/infra/keys/factory.ts
-case 'jose': {
-  process.emitWarning(
-    'JoseSigningKeyProvider is a development provider; private keys live in a local ' +
-      'encrypted file on a single host. Use a vault provider in production.',
-    { code: 'DEV_SIGNING_KEY_PROVIDER' }
-  );
-
-  return new JoseSigningKeyProvider(config.provider, config.algorithm);
+  throw new CustomError({
+    name: 'DB_BACKEND_ERROR',
+    message: 'Failed to create MongoDB record',
+    cause: error
+  });
 }
 ```
 
-`docker-compose.dev.yml` construye el mismo Dockerfile y se une a la misma red `services`
-con MongoDB y OpenBao.
+```typescript
+// Evitar: un error no clasificado que el límite solo puede reportar como un fallo genérico.
+throw new Error('User not found');
+```
+
+Relacionado: GP-18; [BS-04](../normas/construir-servicios.md#bs-04-respuestas-de-problema).
+
+**Comprobación:** ningún `throw new Error` ni `throw new TypeError` escapa de una función sin
+envolverse en un `CustomError`.
+
+### GP-21 Paridad entre desarrollo y producción
+
+El desarrollo usa los mismos tipos de servicios de respaldo que producción, y cada diferencia
+es explícita, nombrada y limitada a adaptadores seleccionados por configuración. Un backend
+usado solo en producción oculta fallos hasta la release.
+
+```typescript
+// Evitar: un adaptador solo de desarrollo que arranca en silencio, de modo que una mala
+// configuración lo envía a producción sin que nadie lo note.
+case 'dev-insecure': {
+  return new InsecureDevKeyProvider(config.provider);
+}
+```
+
+`docker-compose.dev.yml` construye el mismo Dockerfile y se une a la misma red `services` con
+MongoDB y OpenBao. `JoseKeysProvider` no es un adaptador solo de desarrollo: es un proveedor
+de producción para despliegues pequeños (un host o réplicas que comparten un archivo de
+clave), así que no anuncia nada.
 
 ```yaml
 # Evitar: un motor de base de datos solo de desarrollo que producción nunca ejecuta.
 databaseBackend: sqlite
 ```
 
-Relacionado: GP-10, GP-06.
+Relacionado: GP-10, GP-05.
 
 **Comprobación:** cada adaptador solo de desarrollo se anuncia a sí mismo al arrancar y se
-rechaza o se advierte en la configuración de producción.
-
-### GP-22 Mínimo privilegio
-
-Los procesos, tokens y políticas tienen solo los permisos que su trabajo necesita, de modo
-que un componente comprometido no puede escalar ni destruir datos.
-
-```dockerfile
-# services/auth/Dockerfile
-RUN addgroup -S nodegroup && adduser -S nodeuser -G nodegroup
-USER nodeuser
-```
-
-```hcl
-# docs/en/howto/openbao/auth-signing-policy.hcl
-path "transit/sign/auth-signing-*" {
-  capabilities = ["update"]
-}
-
-path "secret/data/auth/signing-lifecycle" {
-  capabilities = ["read"]
-}
-```
-
-```hcl
-# Evitar: un token de servicio que también puede reescribir o destruir sus propias claves.
-path "transit/keys/*" {
-  capabilities = ["create", "update", "delete"]
-}
-```
-
-Relacionado: GP-09, GP-23.
-
-**Comprobación:** ningún contenedor corre como root, y la política de cada token lista solo
-las operaciones que el servicio realiza.
-
-### GP-23 Valores por defecto de transporte seguro
-
-Los servicios HTTP habilitan headers de seguridad, CORS explícito, límites de tasa en cada
-endpoint no autenticado que crea o cambia estado, y atributos de cookie seguros. Los valores
-por defecto son lo que se envía cuando nadie recuerda configurar.
-
-```typescript
-// services/auth/src/api/plugins/security.ts
-await fastify.register(helmet);
-await fastify.register(cors, { origin: false, credentials: false });
-await fastify.register(rateLimit, { global: false });
-
-// services/auth/src/api/routes/v1/session/routes.ts
-config: { rateLimit: { max: 5, timeWindow: '1 minute' } },
-```
-
-El limitador de tasa se registra con `global: false`, de modo que cada ruta opta por él; el
-inicio de sesión y el registro público lo hacen. La cookie de refresco lleva el prefijo
-`__Host-` con `secure`, `httpOnly` y `sameSite`.
-
-```typescript
-// Evitar: una ruta no autenticada que almacena estado por llamada, sin límite.
-fastify.get('/:provider/authorize', { schema: { /* ... */ } }, startOAuthBrowserFlow);
-```
-
-Relacionado: GP-22, GP-14.
-
-**Comprobación:** cada ruta no autenticada que crea o cambia estado declara
-`config.rateLimit`.
+rechaza o se advierte en la configuración de producción; un adaptador apto para producción,
+como `JoseKeysProvider`, no lleva tal advertencia.
 
 ### GP-24 Pruebas en las costuras de contrato
 
@@ -743,7 +630,13 @@ export async function buildApi(options: BuildApiOptions): Promise<ZodFastifyInst
 
 Como `buildApi` toma sus servicios como opciones y no enlaza ningún puerto, una prueba puede
 inyectar fakes para `ICrud`, `ISigningKeyProvider` e `IOAuthProvider` y llamar a
-`app.inject`. La estrategia se planifica en `docs/plans/tests-suite.md`.
+`app.inject`. La estrategia se planifica en `docs/plans/261029-tests-suite-plan.md`.
+
+Los contratos son lo que abarata esos fakes. TypeScript compara de forma nominal una clase
+con miembros `private`, así que un objeto plano no puede sustituir a `SessionsService`, pero
+sí a `ISessionsService`. Una prueba de transporte simula los casos de uso con fakes y
+comprueba el enrutado, los hooks y el mapeo de errores; una prueba de caso de uso simula los
+contratos que consume y comprueba la política; ninguna necesita un servicio de respaldo.
 
 ```typescript
 // Evitar: una prueba unitaria que necesita una base de datos en vivo para comprobar una regla de validación.
@@ -752,21 +645,69 @@ const crud: ICrud<UserRecord> = new MongoCrud(realMongoDb.collection('users'));
 
 Relacionado: GP-13, GP-03.
 
-**Comprobación:** cada paquete tiene un comando de pruebas que se ejecuta en CI.
+**Comprobación:** ninguna prueba de nivel rápido abre una conexión a un servicio de respaldo;
+los fakes entran a través de los mismos contratos que inyecta la raíz de composición.
+
+### GP-25 Seguro por defecto y mínimo privilegio
+
+Cada componente nuevo que expone o concede algo (una ruta HTTP, un comando de CLI, un
+consumidor de mensajes, un token, una cookie, un contenedor, una política de acceso) se crea
+en su estado más restrictivo, y mientras se ejecuta tiene solo los permisos que su trabajo
+necesita, de modo que un componente comprometido no puede escalar ni destruir datos. Aflojar
+cualquiera de los dos es una declaración explícita y nombrada en el código o la
+configuración, y cuando falta una declaración requerida el componente se niega a arrancar o a
+construirse en lugar de recaer en abierto. Un estado seguro que hay que recordar se pierde la
+primera vez que alguien lo olvida.
+
+```typescript
+// http/src/plugins/security.ts
+fastify.addHook('onRoute', (routeOptions: RouteOptions): void => {
+  const onRequest: unknown[] = [routeOptions.onRequest ?? []].flat();
+  const tiers: number = onRequest.filter(
+    (hook: unknown): boolean => hook === publicRateLimit || hook === exemptRateLimit
+  ).length;
+
+  if (tiers !== 1 || routeOptions.config?.rateLimit !== undefined) {
+    throw new CustomError({
+      name: 'CONFIG_ERROR',
+      message: `Route ${String(routeOptions.method)} ${url} needs one rate-limit tier`
+    });
+  }
+});
+```
+
+```dockerfile
+# services/auth/Dockerfile
+USER nodeuser
+```
+
+Una ruta nueva no puede arrancar sin límite, y el nivel exento es la única salida, revisable.
+
+```typescript
+// Evitar: un componente que queda abierto a menos que alguien recuerde cerrarlo.
+const requireAuth: boolean = options.requireAuth ?? false;
+```
+
+```hcl
+# Evitar: un token de servicio que también puede reescribir o destruir sus propias claves.
+path "transit/keys/*" {
+  capabilities = ["create", "update", "delete"]
+}
+```
+
+Relacionado: GP-08, GP-09, GP-20;
+[BS-01](../normas/construir-servicios.md#bs-01-valores-seguros-de-transporte-por-defecto).
+
+**Comprobación:** cada relajación de un valor por defecto de seguridad o exposición es una
+declaración explícita, y ningún componente recae en abierto cuando falta; ningún contenedor
+corre como root, y la política de cada token lista solo las operaciones que el servicio
+realiza.
 
 ## Beneficios y contrapartidas
 
-Aplicadas en conjunto, estas prácticas le dan a la plataforma:
-
-- **Reproducibilidad**: el mismo commit construye el mismo artefacto (GP-05, GP-06, GP-12).
-- **Configuración segura**: los ajustes inválidos detienen el arranque y los secretos quedan
-  fuera de los archivos y las imágenes (GP-08, GP-09, GP-10).
-- **Infraestructura reemplazable**: los servicios de respaldo se intercambian por
-  configuración (GP-11, GP-21).
-- **Operabilidad**: los procesos arrancan, paran y reportan salud de forma predecible, y los
-  fallos se clasifican y se rastrean (GP-14 a GP-20).
-- **Daño contenido**: el mínimo privilegio y los valores por defecto seguros limitan lo que
-  un compromiso puede hacer (GP-22, GP-23).
+Aplicadas en conjunto, estas prácticas hacen los builds reproducibles (GP-05, GP-12), la
+configuración segura (GP-08 a GP-10), la infraestructura reemplazable (GP-03, GP-21), los
+procesos operables y rastreables (GP-14 a GP-20) y el daño contenido (GP-25).
 
 Las prácticas tienen costes. Los toolchains fijados necesitan actualizaciones deliberadas,
 las puertas de CI ralentizan ligeramente cada cambio, y las comprobaciones de readiness
@@ -775,50 +716,24 @@ como "debería" puede saltarse con una razón documentada.
 
 Se aceptan dos desviaciones deliberadas de la Twelve-Factor App:
 
-- **Archivo de configuración más secretos del entorno**: la configuración vive en un archivo
-  JSON validado, no enteramente en variables de entorno. Solo los secretos y las credenciales
-  vienen del entorno (GP-09). El archivo da un documento revisado y validado por esquema por
-  despliegue; el coste es que debe mantenerse libre de secretos.
+- **Archivo de configuración más secretos del entorno**: un archivo JSON validado por
+  despliegue contiene la configuración, y solo los secretos vienen del entorno (GP-09); el
+  coste es que el archivo debe mantenerse libre de secretos.
 - **Tareas de arranque en lugar de procesos puntuales**: el aprovisionamiento de datasets y
-  la reconciliación del administrador bootstrap se ejecutan en cada arranque. Ambas son
-  idempotentes (GP-17), así que ejecutarlas en cada arranque es seguro y elimina un paso
-  manual.
+  la reconciliación del administrador bootstrap se ejecutan en cada arranque, lo cual es
+  seguro porque ambas son idempotentes (GP-17).
 
 ## Relación con la Twelve-Factor App
 
-Cómo se mapea cada factor a las prácticas anteriores:
-
-- **I Codebase**: [GP-01](#gp-01-un-repositorio-por-paquete-o-servicio).
-- **II Dependencies**: [GP-05](#gp-05-dependencias-declaradas-y-bloqueadas),
-  [GP-06](#gp-06-toolchain-fijado), [GP-07](#gp-07-salvaguardas-de-la-cadena-de-suministro).
-- **III Config**: [GP-08](#gp-08-configuración-validada-fallo-rápido),
-  [GP-09](#gp-09-secretos-y-credenciales-solo-desde-el-entorno),
-  [GP-10](#gp-10-la-configuración-varía-por-despliegue-no-por-build).
-- **IV Backing services**:
-  [GP-11](#gp-11-los-servicios-de-respaldo-son-recursos-adjuntos-detrás-de-contratos).
-- **V Build, release, run**: [GP-12](#gp-12-artefactos-inmutables-desplegados-por-identidad),
-  [GP-13](#gp-13-las-puertas-de-calidad-se-ejecutan-en-ci).
-- **VI Processes**: [GP-14](#gp-14-procesos-sin-estado).
-- **VII Port binding**: lo cumple Fastify escuchando en `http.host` y `http.port`; sin
-  práctica aparte.
-- **VIII Concurrency**: lo cumplen los procesos sin estado (GP-14); sin práctica aparte hasta
-  que un servicio necesite tipos de proceso trabajador.
-- **IX Disposability**: [GP-15](#gp-15-descartabilidad-arranque-rápido-parada-ordenada),
-  [GP-16](#gp-16-liveness-y-readiness).
-- **X Dev/prod parity**: [GP-21](#gp-21-paridad-entre-desarrollo-y-producción).
-- **XI Logs**: [GP-18](#gp-18-logs-como-flujo-de-eventos).
-- **XII Admin processes**:
-  [GP-17](#gp-17-las-tareas-administrativas-son-idempotentes-y-propiedad-del-operador).
-
-Dónde la plataforma va más allá de los factores:
-
-- **Arquitectura dentro del proceso**: capas, contratos y una raíz de composición (GP-02,
-  GP-03), que los factores dejan abierto.
-- **Definiciones compartidas**: esquemas como única fuente de verdad (GP-04) y errores
-  clasificados (GP-20).
-- **Seguridad operativa**: salvaguardas de la cadena de suministro (GP-07), readiness
-  (GP-16), ids de correlación (GP-19), valores por defecto de seguridad (GP-22, GP-23) y
-  pruebas (GP-24).
+- **I Codebase**: GP-01. **II Dependencies**: GP-05, GP-07. **III Config**: GP-08 a GP-10.
+- **IV Backing services**: GP-03. **V Build, release, run**: GP-12, GP-13.
+- **VI Processes** y **VIII Concurrency**: GP-14; todavía sin tipos de proceso trabajador.
+- **VII Port binding**: Fastify escucha en `http.host` y `http.port`; sin práctica aparte.
+- **IX Disposability**: GP-15. **X Dev/prod parity**: GP-21. **XI Logs**: GP-18.
+- **XII Admin processes**: GP-17.
+- **Más allá de los factores**: capas y contratos (GP-02, GP-03), esquemas (GP-04), errores
+  clasificados (GP-20), cadena de suministro (GP-07), pruebas (GP-24) y valores por defecto
+  seguros (GP-25).
 
 ## Referencias
 
@@ -836,4 +751,3 @@ Dónde la plataforma va más allá de los factores:
 - npm Docs.
   [Generating provenance statements](https://docs.npmjs.com/generating-provenance-statements).
 - SLSA. [Supply-chain Levels for Software Artifacts](https://slsa.dev/).
-</content>

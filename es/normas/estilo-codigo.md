@@ -1,6 +1,6 @@
 ---
 title: Estilo de código
-lastUpdate: 2026-10-24
+lastUpdate: 2026-11-18
 lang: es
 category: guia
 status: published
@@ -8,13 +8,15 @@ status: published
 
 ## Propósito
 
-Estilo de código de la casa para TypeScript en toda la plataforma de Salamandra Devs,
-incluyendo cómo los servicios de API RESTful componen los hooks de ruta de Fastify. Estas
+Estilo de código de la casa para TypeScript en toda la plataforma de Salamandra Devs. Estas
 reglas aplican a cada contribuyente, humano o agente. Las reglas de comentarios de código
-fuente viven en la [Guía de estilo de documentos](./guia-estilo-documentos.md).
+fuente viven en la [Guía de estilo de documentos](./guia-estilo-documentos.md), y cómo los
+servicios Fastify componen los hooks de ruta vive en
+[Construir servicios](./construir-servicios.md#hooks-de-ruta).
 
 Cada sección de regla lleva un ID estable (`CS-NN`) para su citación; los IDs siguen
-[IDs de documento](./convenciones-nombres.md#ids-de-documento).
+[IDs de documento](./convenciones-nombres.md#ids-de-documento). CS-09 a CS-12 están
+retiradas: se trasladaron a BS-05 a BS-08.
 
 ## TypeScript
 
@@ -282,100 +284,3 @@ async deleteBySubject(subject: string): Promise<number> {
   return this.sessionRecordsHandler.deleteBySubject(subject);
 }
 ```
-
-## Hooks de API RESTful
-
-Cómo los servicios de API RESTful componen los hooks de ruta de Fastify: dónde viven los
-hooks compartidos, cuándo un grupo de rutas puede definir los suyos, y cómo los hooks locales
-de ruta permanecen tipados sin aserciones.
-
-### CS-09 Hooks compartidos
-
-- Los hooks de ruta transversales o reutilizables deben publicarse como decoraciones de
-  plugin de Fastify. Esto incluye autenticación, enlace del contexto de ejecución, hooks de
-  tasa/tenant/seguridad y hooks de autorización comunes. No exporte funciones helper sueltas
-  desde los módulos de hooks compartidos ni las pase directamente como hooks de ciclo de vida
-  de Fastify.
-- Use `api/routes/v1/hooks/` como la fuente preferida para la composición de hooks
-  compartidos de v1. Estos archivos deberían componer los hooks decorados de Fastify en
-  arreglos ordenados para las políticas de ruta compartidas.
-
-```ts
-// api/routes/v1/hooks/authenticate.ts
-export function protectionHooks(fastify: FastifyInstance): PreHandlerHooks {
-  return [fastify.authenticateRequest, fastify.bindExecutionContext];
-}
-```
-
-### CS-10 Hooks locales de ruta
-
-- En `api/routes/v1/[slug]/`, añada un `hooks.ts` local solo cuando la ruta necesite una
-  composición de hooks específica del slug o una política de ruta muy local. Los archivos de
-  hooks locales pueden componer hooks compartidos de v1 con hooks decorados de Fastify, y
-  pueden definir hooks locales de ruta privados solo cuando la política no se comparte fuera
-  de ese grupo de rutas.
-
-```ts
-// api/routes/v1/users/hooks.ts
-function requireUserOwnerOrAdmin(request: FastifyRequest): void {
-  // Política local de ruta que no comparten otros grupos de rutas.
-}
-
-export function userOwnerProtectionHooks(fastify: FastifyInstance): PreHandlerHooks {
-  return [...protectionHooks(fastify), requireUserOwnerOrAdmin];
-}
-```
-
-- Cuando una política local de ruta se vuelve útil fuera de un grupo de rutas, promuévala a
-  una decoración de plugin de Fastify y compóngala a través de `api/routes/v1/hooks/` en
-  lugar de importarla como un helper compartido.
-
-### CS-11 Controladores
-
-- Los controladores deben asumir que los hooks declarados ya establecieron las
-  precondiciones de la ruta. No repita las comprobaciones de autenticación, contexto de
-  ejecución, tenant o autorización común en los controladores, salvo que el controlador esté
-  manejando un estado de ejecución distinto que los hooks no puedan establecer.
-
-### CS-12 Hooks locales de ruta tipados
-
-- Un hook local de ruta que necesita acceso tipado a partes de la petición específicas de la
-  ruta (`params`, `body`, `querystring`, `headers`) se tipa mediante un tipo de definición de
-  ruta, nunca mediante augmentación de `FastifyRequest` ni mediante aserciones. La
-  augmentación se reserva para decoraciones invariantes de ruta como `sessionGrant` o los
-  codecs de cursor.
-- Tipe el parámetro del hook como `FastifyRequest<TRouteDef>`, componga el arreglo de hooks a
-  través del helper compartido `PreHandlerHooks<TRouteDef>` de `api/routes/v1/hooks/types.ts`,
-  y reutilice la misma definición de ruta en el registro de la ruta y en el controlador para
-  que el contrato de la petición tenga una sola fuente de verdad. Defina `TRouteDef` en
-  `api/routes/v1/[slug]/types.ts`.
-- Mantenga los compositores compartidos e invariantes de ruta sobre el genérico por defecto
-  `PreHandlerHooks` y ponga la especialización en el compositor local de ruta; un hook de
-  genérico por defecto compone dentro de un arreglo especializado, nunca al revés.
-- Pista: si un hook necesita aserción de `request.params`, `body` o `query` (`as ...`) para
-  tipar, el enfoque de definición de ruta no se aplicó; introduzca una definición de ruta y
-  pásela por el compositor en lugar de aseverar.
-
-```ts
-// api/routes/v1/hooks/types.ts
-export type PreHandlerHooks<
-  TRouteDef extends RouteGenericInterface = RouteGenericInterface
-> = preHandlerHookHandler<
-  RawServerDefault,
-  RawRequestDefaultExpression,
-  RawReplyDefaultExpression,
-  TRouteDef
->[];
-
-// api/routes/v1/users/hooks.ts
-function authorizeUserUpdate(request: FastifyRequest<UpdateUserRequest>): void {
-  const targetRecordId: string = request.params.recordId; // inferido, sin aserción
-}
-
-export function userUpdateProtectionHooks(
-  fastify: FastifyInstance
-): PreHandlerHooks<UpdateUserRequest> {
-  return [...protectionHooks(fastify), authorizeUserUpdate];
-}
-```
-</content>

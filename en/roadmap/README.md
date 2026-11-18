@@ -1,6 +1,6 @@
 ---
 title: Roadmap Rules
-lastUpdate: 2026-11-11
+lastUpdate: 2026-11-18
 lang: en
 category: planning
 status: active
@@ -9,7 +9,7 @@ status: active
 # Roadmap Rules
 
 These rules apply to every `{REPO}-ROADMAP.md` file in this directory (`AUTH`, `CORE`,
-`GATEWAY`, `TOOLS`).
+`GATEWAY`, `HTTP`, `TOOLS`).
 
 ## Line format
 
@@ -23,7 +23,7 @@ Example:
 
 ```markdown
 - [implemented] AUTH-004 Sessions: issue, read, terminate, and refresh with rotating opaque
-  refresh tokens stored as HMAC hashes. (refs: `docs/session-plan.md`,
+  refresh tokens stored as HMAC hashes. (refs: `docs/plans/session-plan.md`,
   `src/application/sessions-service/`)
 ```
 
@@ -44,8 +44,8 @@ frontmatter `status` values.
 
 ## Scope and paths
 
-- Scope: `core/`, `tools/`, `services/auth/`, and `services/gateway/`, each with its own
-  roadmap file in this directory.
+- Scope: `core/`, `tools/`, `http/`, `services/auth/`, and `services/gateway/`, each with
+  its own roadmap file in this directory.
 - Paths are relative to each repository root. Auth route paths are relative to the auth
   service root, before any gateway prefix; gateway route paths include the service prefix as
   served (`/gateway/v1/...`).

@@ -1,6 +1,6 @@
 ---
 title: Naming Conventions
-lastUpdate: 2026-11-13
+lastUpdate: 2026-11-18
 category: architecture
 lang: en
 status: published
@@ -185,8 +185,9 @@ Established forms (full words remain valid under [Abbreviations](#abbreviations)
   `mysql/mysql-dataset.ts`).
 - **Records layer:** `storage/` holds `RecordsHandler`, `BaseRecord`, `baseRecordSchema`,
   and `recordIndexDef`.
-- **Runtime layer:** `runtime/` holds the execution context (`ExecutionContext`,
-  `runWithExecutionCtx`, `getExecutionCtx`).
+- **Runtime layer:** `runtime/` holds the execution context (`ExecutionContext`, the
+  `IExecutionCtxProvider` contract, and `execution-ctx-provider.ts` →
+  `ExecutionCtxProvider`).
 - **Keys layer:** `keys/` holds `ISigningKeyProvider`, `IVerificationKeyProvider`,
   `IKeysProvider`, the providers (`jose/jose-keys-provider.ts`,
   `openbao/openbao-keys-provider.ts`, `jwks/jwks-verification-key-provider.ts`), and
@@ -214,9 +215,9 @@ that `auth` and `gateway` register and consume.
 - **Client layer:** `client/` holds the outbound `makeApiRequest` and its `ApiResponse` and
   `ApiRequestOptions` types.
 - **Decorations:** `src/types.ts` declares the Fastify decorations the plugins publish
-  (`authenticateRequest`, `requireAdminRole`, `requireDefaultTenantSession`, `rateLimitHook`,
-  `publicRateLimit`, `exemptRateLimit`, `bindExecutionContext`, `request.sessionGrant`,
-  `request.decodeCursor`, `reply.encodeCursor`).
+  (`authenticateRequest`, `requireAdminRole`, `requireDefaultTenantSession`,
+  `rateLimitHook`, `publicRateLimit`, `exemptRateLimit`, `bindExecutionContext`,
+  `request.sessionGrant`, `request.decodeCursor`, `reply.encodeCursor`).
 
 Service plugins that depend on the shared ones list the `http-*` names as Fastify
 dependencies; for example `auth-tenant` and `gateway-api-key` depend on `http-security`.
@@ -279,7 +280,7 @@ Two abbreviations must not appear back to back in the same symbol.
 | Definition | `Def` | `DatasetDef`, `userDatasetDef` |
 | Identifier | `Id` | `recordId`, `tenantId`, `actorId` (field suffix) |
 | Configuration | `Config` | `config/`, `ServiceConfig` |
-| Context | `Ctx` | `getExecutionCtx`, `runWithExecutionCtx` |
+| Context | `Ctx` | `IExecutionCtxProvider`, `ExecutionCtxProvider` |
 | Create, Read, Update, Delete | `Crud` | `ICrud`, `MongoCrud` |
 
 **Never**

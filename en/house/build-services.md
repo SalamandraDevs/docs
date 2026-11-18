@@ -1,6 +1,6 @@
 ---
 title: Build Services
-lastUpdate: 2026-11-13
+lastUpdate: 2026-11-14
 lang: en
 category: guide
 status: published
@@ -120,6 +120,8 @@ const executionContext: ExecutionContext = {
   authenticated: { actorId: request.sessionGrant.actorId, /* ... */ },
   request: { requestId: request.id }
 };
+
+options.executionCtx.run(executionContext, done);
 ```
 
 ```typescript
@@ -128,14 +130,15 @@ await fetch(`${profilesUrl}/v1/persons/${recordId}`);
 ```
 
 A call to another platform service forwards the id through the shared client
-`makeApiRequest` from `@salamandradevs/http`. The `forwardRequestId` option is off by
-default, so a third-party call never carries the platform's id; a platform peer call sets
-it.
+`makeApiRequest` from `@salamandradevs/http`. The `executionCtx` option is omitted by
+default, so a third-party call never carries the platform's id; a platform peer call
+passes the service's execution context provider, whose bound request id is sent as
+`x-request-id`.
 
 ```typescript
 // Prefer: forward the correlation id to a platform peer.
 await makeApiRequest(profilesUrl, `/v1/persons/${recordId}`, { method: 'GET' }, {
-  forwardRequestId: true
+  executionCtx
 });
 ```
 

@@ -1,6 +1,6 @@
 ---
 title: Development Good Practices
-lastUpdate: 2026-11-13
+lastUpdate: 2026-11-18
 lang: en
 category: architecture
 status: published
@@ -100,10 +100,10 @@ Related: GP-05, GP-12; [Package Publishing](../infra/packaging.md).
 ### GP-02 Layered service structure
 
 A service splits transport, use cases, persistence, external adapters, configuration, and
-wiring into separate sections ([Service structure](../house/naming-conventions.md#service-structure)),
-and dependencies point inward: transport depends on application contracts and types, never
-on storage or vendor adapters. Mixed layers make a change in one concern ripple through
-all of them.
+wiring into separate sections
+([Service structure](../house/naming-conventions.md#service-structure)), and dependencies
+point inward: transport depends on application contracts and types, never on storage or
+vendor adapters. Mixed layers make a change in one concern ripple through all of them.
 
 ```typescript
 // services/auth/src/api/routes/v1/users/controller.ts

@@ -1,6 +1,6 @@
 ---
 title: Roadmap del servicio Auth
-lastUpdate: 2026-10-25
+lastUpdate: 2026-11-18
 lang: es
 category: planificacion
 status: active
@@ -9,16 +9,17 @@ status: active
 # Roadmap del servicio Auth
 
 Estado de las funcionalidades de `services/auth/` (`@salamandradevs/auth`). Las rutas en
-`refs` son relativas a `services/auth/`.
+`refs` son relativas a `services/auth/`; los documentos de plan bajo `docs/plans/` son
+relativos a la raíz del espacio de trabajo.
 
 ## Funcionalidades de AUTH
 
 API REST en Fastify que emite y verifica sesiones mediante credenciales de contraseña y
-proveedores OAuth. Capas: `api/` (transporte), `application/` (política), `records/`
-(persistencia), `infrastructure/` (claves de OpenBao, proveedores OAuth).
+proveedores OAuth. Capas: `api/` (transporte), `application/` (política), `storage/`
+(persistencia), `infra/` (claves de OpenBao, proveedores OAuth).
 
 - [implementado] AUTH-001 Arquitectura del servicio: raíz de composición, plugins de ruta
-  encapsulados, enlace del contexto de ejecución, OpenAPI. (refs: `docs/auth-plan.md`,
+  encapsulados, enlace del contexto de ejecución, OpenAPI. (refs: `docs/plans/auth-plan.md`,
   `src/runtime/`)
 - [implementado] AUTH-002 Inicio de sesión con contraseña: verificación con Argon2 en el
   tenant por defecto. Ruta: `POST /v1/session`. (refs: `src/application/passwords-service/`)
@@ -28,21 +29,21 @@ proveedores OAuth. Capas: `api/` (transporte), `application/` (política), `reco
   `src/infra/oauth/`)
 - [implementado] AUTH-004 Sesiones: emite, lee, termina y refresca con tokens de refresco
   opacos y rotativos almacenados como hashes HMAC. Rutas: `GET`, `DELETE /v1/session`,
-  `POST /v1/session/refresh`. (refs: `docs/session-plan.md`,
+  `POST /v1/session/refresh`. (refs: `docs/plans/session-plan.md`,
   `src/application/sessions-service/`)
 - [implementado] AUTH-005 Tokens de acceso: emisión y verificación de JWT ES256 hacia una
   concesión de sesión. (refs: `src/application/tokens-service/`)
 - [implementado] AUTH-006 Claves de firma durables: firma con OpenBao Transit contra un
   ciclo de vida de clave propiedad del operador, con JWKS en
-  `GET /.well-known/jwks.json`. (refs: AUTH-023, `docs/signing-plan.md`,
+  `GET /.well-known/jwks.json`. (refs: AUTH-023, `docs/plans/signing-plan.md`,
   `services/auth/src/infra/keys/`, `docs/en/howto/openbao/`)
 - [implementado] AUTH-007 Usuarios: crear, registrar, leer, actualizar, eliminar y buscar
-  mediante `UsersService`. Rutas bajo `/v1/users`. (refs: `docs/users-service-plan.md`,
-  `docs/users-service-completion.md`)
+  mediante `UsersService`. Rutas bajo `/v1/users`. (refs: `docs/plans/users-service-plan.md`,
+  `docs/plans/users-service-completion.md`)
 - [implementado] AUTH-008 Establecimiento de contraseña del administrador:
   `POST /v1/password/set`. (refs: `src/application/passwords-service/`)
 - [implementado] AUTH-009 Plugin de paginación por cursor: decodificación de la petición y
-  `nextCursor` en la respuesta. (refs: `docs/entity-cursor-plugin.md`,
+  `nextCursor` en la respuesta. (refs: `docs/plans/entity-cursor-plugin.md`,
   `src/api/plugins/record-cursor-codec.ts`)
 - [implementado] AUTH-010 Salud y OpenAPI: `GET /health`, `GET /openapi.json`, UI en
   `/docs`. (refs: `src/api/routes/health/`, `src/api/plugins/openapi.ts`)
@@ -53,7 +54,7 @@ proveedores OAuth. Capas: `api/` (transporte), `application/` (política), `reco
   usuarios: `DELETE /v1/users/:recordId` restringido a administradores, protección del
   administrador bootstrap configurado frente a su eliminación, configuración obligatoria de
   `bootstrapAdmin` y cascada de revocación de tokens de refresco ante la eliminación de un
-  usuario y el cambio de privilegios. (refs: `docs/idorGapsClosing.md`,
+  usuario y el cambio de privilegios. (refs: `docs/plans/idorGapsClosing.md`,
   `src/api/routes/v1/users/routes.ts`, `src/application/users-service/`,
   `src/application/sessions-service/`)
 - [implementado] AUTH-021 Extracción de la selección de backend de base de datos:
@@ -73,7 +74,7 @@ proveedores OAuth. Capas: `api/` (transporte), `application/` (política), `reco
   `transit/keys/*` ausente por completo, de modo que un servicio comprometido no puede ni
   destruir material de clave ni reescribir su propio estado. El aprovisionamiento, la
   rotación y la destrucción son procedimientos del operador. (refs:
-  `docs/en/howto/openbao/README.md`, `docs/signing-plan.md`,
+  `docs/en/howto/openbao/README.md`, `docs/plans/signing-plan.md`,
   `services/auth/src/infra/keys/openbao/`)
 - [implementado] AUTH-024 Configuración originada en el entorno: cada valor respaldado por
   el entorno (`BAO_ADDR`, `BAO_TOKEN`, los secretos de cliente OAuth, `JWT_HASH_SECRET`,
@@ -116,11 +117,14 @@ proveedores OAuth. Capas: `api/` (transporte), `application/` (política), `reco
   equivalente, es independiente de cualquier segundo proveedor; la unión discriminada `type`
   y la factoría de proveedores permanecen bloqueadas por la regla del plan de firma contra
   añadir cualquiera de las dos antes de que exista una segunda implementación. (refs:
-  `docs/signing-plan.md`, `services/auth/src/runtime/keys.ts`,
+  `docs/plans/signing-plan.md`, `services/auth/src/runtime/keys.ts`,
   `services/auth/src/runtime/types.ts`, `services/auth/src/application/contracts.ts`)
-- [planificado] AUTH-011 Restablecimiento de contraseña: `POST /v1/password/reset` existe
-  pero siempre falla con `ARCHITECTURE_NOT_IMPLEMENTED`.
-  (refs: `src/application/passwords-service/`)
+- [implementado] AUTH-011 Restablecimiento de contraseña: recuperación autoservicio basada
+  en correo. El paso de solicitud `POST /v1/password/reset` siempre responde 202 y envía un
+  enlace con un token de un solo uso; el paso de confirmación
+  `POST /v1/password/reset/confirm` establece una nueva contraseña a partir de ese token y
+  revoca las sesiones de la cuenta. (refs: `docs/plans/261031-password-reset-plan.md`,
+  `src/application/passwords-service/`, `src/api/routes/v1/password/`)
 - [propuesto] AUTH-012 Vía con tiempo constante para usuario desconocido: reducir la señal
   de enumeración de usuarios. (refs: NOTA en `passwords-service.ts`)
 - [propuesto] AUTH-013 PKCE de OAuth para el flujo de código de autorización:
@@ -129,10 +133,9 @@ proveedores OAuth. Capas: `api/` (transporte), `application/` (política), `reco
   verificar). (refs: `src/application/oauth-service/`, TODO en
   `src/application/contracts.ts`)
 - [propuesto] AUTH-014 Inicio de sesión multi-tenant y selección de tenant: hoy el inicio de
-  sesión es de un único tenant por defecto. (refs: `docs/session-plan.md`)
+  sesión es de un único tenant por defecto. (refs: `docs/plans/session-plan.md`)
 - [propuesto] AUTH-016 Verificación de correo electrónico.
 - [propuesto] AUTH-017 Eventos de ciclo de vida del usuario como `auth.user.created`.
-  (refs: `docs/es/normas/convenciones-nombres.md`)
 - [propuesto] AUTH-020 Refresco de tokens de proveedor OAuth: persistir y refrescar los
   tokens de acceso del proveedor para llamadas posteriores a la API del proveedor en nombre
   del usuario. Aplazado mientras se prueba el flujo de inicio de sesión OAuth; hoy el inicio
@@ -142,14 +145,40 @@ proveedores OAuth. Capas: `api/` (transporte), `application/` (política), `reco
   Vitest con alias de subruta, fakes en memoria compartidos para `ICrud`,
   `ISigningKeyProvider` e `IOAuthProvider`, y `app.inject` de Fastify sobre `buildApi`, de
   modo que el bucle rápido se ejecute sin MongoDB, OpenBao ni un proveedor OAuth real.
-  (refs: `docs/tests-suite.md`, AUTH-001)
+  (refs: `docs/plans/261029-tests-suite-plan.md`, AUTH-001)
 - [propuesto] AUTH-026 Arnés de pruebas de extremo a extremo: la imagen Docker construida
   ejercitada por HTTP contra MongoDB, JoseSigningKeyProvider y un proveedor OIDC simulado
   mediante docker-compose en CI, cubriendo los adaptadores concretos y el bootstrap de
   `createRuntime` que el nivel de integración omite. Se construye después de AUTH-025.
-  (refs: `docs/tests-suite.md`, AUTH-025)
+  (refs: `docs/plans/261029-tests-suite-plan.md`, AUTH-025)
 - [cancelado] AUTH-015 Rotación programada de la clave de firma: rechazada. AUTH-023 movió
   todo el ciclo de vida de la clave al operador, así que la rotación es un procedimiento por
   CLI de OpenBao y el servicio auth no tiene ninguna rotación que programar. (refs:
   `docs/en/howto/openbao/README.md`)
-</content>
+- [implementado] AUTH-029 Políticas de límite de tasa configurables: un límite global que
+  cada ruta hereda, políticas por ruta con nombre, y un segundo límite con clave por IP del
+  cliente y cuenta en el inicio de sesión y el restablecimiento de contraseña, todo leído
+  desde `http.rateLimit`; un `http.trustProxy` configurable (nunca `true`) para que los
+  límites cuenten clientes reales detrás del gateway, y un 429 clasificado cuando se excede
+  un límite. (refs: `src/api/plugins/security.ts`,
+  `src/api/routes/v1/hooks/rate-limit.ts`, `docs/plans/261031-rate-limit-plan.md`)
+- [implementado] AUTH-030 Niveles de límite de tasa: reemplaza las políticas por ruta con
+  niveles nombrados por lo que cuentan, `public` por IP del cliente, `authenticated` por
+  subject de sesión, `credential` por IP y por cuenta, y `exempt`; cada ruta declara su
+  nivel y el arranque falla cuando falta uno. También corrige el límite por cuenta, que
+  nunca se ejecutaba porque solo contaba el primer limitador de una petición. (refs:
+  `src/api/plugins/security.ts`, `src/api/routes/v1/hooks/rate-limit.ts`,
+  `docs/plans/261104-rate-limit-tiers-plan.md`, AUTH-029)
+- [implementado] AUTH-031 API keys de tenant: cada llamada lleva un `x-api-key` que vincula
+  su tenant, verificado por HMAC sin ida y vuelta a la base de datos; los administradores
+  aprovisionan tenants y emiten, listan y revocan claves, con las revocaciones recargadas en
+  segundo plano; el rol `tenant` posee los usuarios de su tenant, y el nivel de la clave fija
+  el límite de tasa del tenant. Se construye después de AUTH-030. (refs:
+  `src/application/api-keys-service/`, `src/api/plugins/api-key.ts`,
+  `docs/plans/261104-api-keys-plan.md`, AUTH-030)
+- [planificado] AUTH-032 Las API keys se trasladan al gateway: el registro de API keys, su
+  firma y administración, y el nivel de límite de tasa por tenant se trasladan de auth al
+  nuevo servicio `gateway`. Auth descarta `x-api-key`, lee el `x-tenant-id` afirmado por el
+  gateway mediante `resolveTenant`, y conserva solo sus niveles `public`, `authenticated` y
+  `credential`; la maquinaria de claves de firma y la verificación de token de acceso se
+  trasladan a `@salamandradevs/core`. (refs: `docs/plans/261106-gateway-plan.md`, AUTH-031)

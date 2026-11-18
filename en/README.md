@@ -1,6 +1,6 @@
 ---
 title: Salamandra Devs Documentation
-lastUpdate: 2026-11-13
+lastUpdate: 2026-11-18
 lang: en
 category: guide
 status: active
@@ -72,7 +72,10 @@ Feature status per package, tracked inline with status tags.
 
 - [Core Library Roadmap](./roadmap/CORE-ROADMAP.md): feature status for `core/`.
 - [Tools Library Roadmap](./roadmap/TOOLS-ROADMAP.md): feature status for `tools/`.
+- [HTTP Library Roadmap](./roadmap/HTTP-ROADMAP.md): feature status for `http/`.
 - [Auth Service Roadmap](./roadmap/AUTH-ROADMAP.md): feature status for `services/auth/`.
+- [Gateway Service Roadmap](./roadmap/GATEWAY-ROADMAP.md): feature status for
+  `services/gateway/`.
 
 ## How to use this repository
 

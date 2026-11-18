@@ -163,4 +163,3 @@ la publicación se corta etiquetando `v<version>`.
   `pnpm format && pnpm lint` en `pre-push`, que edita el árbol *después* de su commit,
   dejándolo sucio y el commit enviado sin formatear. Ejecute format y lint y haga commit
   antes de hacer push para que el hook sea una operación sin efecto.
-</content>
